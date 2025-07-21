@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Learning Classifier Training Process | Interactive Guide</title>
+    <meta name="description" content="An interactive, step-by-step visualisation of the deep learning classifier training process, from dataset preparation to model deployment.">
+    <meta name="keywords" content="deep learning, machine learning, neural networks, training process, classifier, education">
+    <meta name="author" content="Soumick Chatterjee">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+            line-height: 1.6;
+        }
+        .card {
+            background: white;
+            border-radius: 0.875rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
+            border: 1px solid #e2e8f0;
+        }
+        .card:hover {
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
+            transform: translateY(-2px);
+        }
+        .arrow {
+            position: relative;
+            text-align: center;
+            margin: 3rem 0;
+        }
+        .arrow::after {
+            content: '▼';
+            font-size: 2.5rem;
+            color: #6366f1;
+            animation: bounce 2s infinite;
+            text-shadow: 2px 2px 4px rgba(99, 102, 241, 0.3);
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-20px);
+            }
+            60% {
+                transform: translateY(-10px);
+            }
+        }
+        .step-title {
+            font-size: 1.375rem;
+            font-weight: 700;
+            color: #4338ca;
+            margin-bottom: 0.75rem;
+            text-shadow: 1px 1px 2px rgba(67, 56, 202, 0.1);
+        }
+        .explanation {
+            color: #475569;
+            font-size: 1.05rem;
+        }
+        .code-snippet {
+            background: linear-gradient(145deg, #1e293b, #334155);
+            color: #e2e8f0;
+            padding: 1.25rem;
+            border-radius: 0.75rem;
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            margin-top: 1rem;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+            border: 1px solid #475569;
+        }
+        .highlight {
+            color: #a78bfa;
+            font-weight: 600;
+            background: linear-gradient(45deg, #a78bfa, #c084fc);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .icon {
+            width: 60px;
+            height: 60px;
+            margin-right: 1.5rem;
+            filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.1));
+        }
+        .epoch-container {
+            border: 3px dashed #6366f1;
+            padding: 2rem;
+            border-radius: 1rem;
+            margin-top: 2rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+        }
+        .chart-container {
+            width: 100%;
+            height: 280px;
+            background: linear-gradient(135deg, #eef2ff 0%, #f1f5f9 100%);
+            border-radius: 0.75rem;
+            position: relative;
+            padding: 1.5rem;
+            border: 2px solid #e2e8f0;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .chart-line {
+            position: absolute;
+            height: 3px;
+            border-radius: 1.5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .chart-point {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #4338ca;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .label {
+            position: absolute;
+            font-size: 0.8rem;
+            color: #475569;
+            font-weight: 500;
+        }
+        .gradient-text {
+            background: linear-gradient(45deg, #4338ca, #6366f1);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+        .feature-badge {
+            display: inline-block;
+            background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin: 0.25rem;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        }
+        .neural-network-viz {
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            border-radius: 1rem;
+            padding: 2rem;
+            border: 2px solid #cbd5e1;
+        }
+        .neuron {
+            transition: all 0.3s ease;
+        }
+        .neuron:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <header class="text-center mb-16">
+            <h1 class="text-5xl font-bold gradient-text mb-6">The Journey of Training a Deep Learning Classifier</h1>
+            <p class="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">A comprehensive, interactive step-by-step visualisation of the training process, designed to illuminate the fascinating world of machine learning.</p>
+            
+            <!-- Author Information -->
+            <div class="mt-6 inline-block bg-white rounded-lg shadow-md px-6 py-4 border border-gray-200">
+                <div class="flex items-center justify-center space-x-3">
+                    <svg class="w-5 h-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="text-sm">
+                        <span class="text-gray-500 font-medium">Created by:</span>
+                        <span class="text-gray-800 font-semibold ml-1"><a href="https://www.soumick.com">Soumick Chatterjee, PhD</a></span>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    🎓 Teaching Tool for an Introduction to Machine Learning Course
+                </div>
+            </div>
+        </header>
+
+        <!-- Step 1: The Dataset -->
+        <div class="card" id="step1">
+            <div class="flex items-center">
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+                </svg>
+                <div>
+                    <h2 class="step-title">Step 1: The Dataset Foundation</h2>
+                    <p class="explanation">Everything begins with data. We need a collection of examples, each with a corresponding label. For a classifier, this could be images of animals and their species, medical scans with diagnoses, or text documents with categories.</p>
+                </div>
+            </div>
+            <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div class="group cursor-pointer">
+                    <div class="w-30 h-30 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl mx-auto transition-transform duration-300 group-hover:scale-105 shadow-md flex items-center justify-center border-2 border-blue-300">
+                        <span class="text-6xl">🐱</span>
+                    </div>
+                    <p class="mt-3 font-semibold text-indigo-600">Label: Cat</p>
+                </div>
+                <div class="group cursor-pointer">
+                    <div class="w-30 h-30 bg-gradient-to-br from-amber-100 to-amber-200 rounded-xl mx-auto transition-transform duration-300 group-hover:scale-105 shadow-md flex items-center justify-center border-2 border-amber-300">
+                        <span class="text-6xl">🐕</span>
+                    </div>
+                    <p class="mt-3 font-semibold text-amber-600">Label: Dog</p>
+                </div>
+                <div class="group cursor-pointer">
+                    <div class="w-30 h-30 bg-gradient-to-br from-green-100 to-green-200 rounded-xl mx-auto transition-transform duration-300 group-hover:scale-105 shadow-md flex items-center justify-center border-2 border-green-300">
+                        <span class="text-6xl">🐦</span>
+                    </div>
+                    <p class="mt-3 font-semibold text-green-600">Label: Bird</p>
+                </div>
+                <div class="group cursor-pointer">
+                    <div class="w-30 h-30 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl mx-auto transition-transform duration-300 group-hover:scale-105 shadow-md flex items-center justify-center border-2 border-pink-300">
+                        <span class="text-6xl">🐰</span>
+                    </div>
+                    <p class="mt-3 font-semibold text-pink-600">Label: Rabbit</p>
+                </div>
+            </div>
+            <div class="mt-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+                <h3 class="font-bold text-lg text-blue-900 mb-3">📊 Data Splitting Strategy</h3>
+                <p class="explanation">This dataset is carefully split into:</p>
+                <div class="grid md:grid-cols-3 gap-4 mt-4">
+                    <div class="bg-white p-4 rounded-lg border border-blue-200">
+                        <div class="font-semibold text-indigo-600 text-lg">🎯 Training Set (70%)</div>
+                        <p class="text-sm text-gray-600 mt-1">Used to teach the model patterns and relationships</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-blue-200">
+                        <div class="font-semibold text-teal-600 text-lg">✅ Validation Set (15%)</div>
+                        <p class="text-sm text-gray-600 mt-1">Evaluates performance during training</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border border-blue-200">
+                        <div class="font-semibold text-purple-600 text-lg">🔬 Test Set (15%)</div>
+                        <p class="text-sm text-gray-600 mt-1">Final evaluation on completely unseen data</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="arrow"></div>
+
+        <!-- Step 2: Model Architecture -->
+        <div class="card" id="step2">
+            <div class="flex items-center">
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L12 15.25l5.571-3m-5.571 0V6.25a2.25 2.25 0 0 0-2.25-2.25H6.25a2.25 2.25 0 0 0-2.25 2.25v3.5Z" />
+                </svg>
+                <div>
+                    <h2 class="step-title">Step 2: The Neural Network Architecture</h2>
+                    <p class="explanation">We define a model—a network of interconnected layers of artificial "neurones". Initially, the connections (weights) between these neurones are randomly initialised. The goal of training is to optimise these weights to recognise patterns in the data.</p>
+                </div>
+            </div>
+            <div class="neural-network-viz mt-6">
+                <h3 class="font-bold text-lg text-center mb-6 text-slate-700">🧠 Neural Network Visualisation</h3>
+                <div class="flex justify-around items-center">
+                    <!-- Input Layer -->
+                    <div class="text-center">
+                        <p class="font-bold text-blue-600 mb-3">Input Layer</p>
+                        <div class="flex flex-col items-center space-y-3">
+                            <div class="w-16 h-16 bg-gradient-to-br from-sky-200 to-sky-400 rounded-xl flex items-center justify-center text-lg font-bold text-sky-800 neuron shadow-lg">
+                                📸
+                            </div>
+                            <p class="text-xs text-gray-600">Raw pixels</p>
+                        </div>
+                    </div>
+                    
+                    <div class="text-3xl font-bold text-gray-400 animate-pulse">→</div>
+                    
+                    <!-- Hidden Layers -->
+                    <div class="text-center">
+                        <p class="font-bold text-indigo-600 mb-3">Hidden Layers</p>
+                        <div class="flex space-x-6">
+                            <div class="flex flex-col space-y-3">
+                                <div class="w-12 h-12 bg-gradient-to-br from-indigo-200 to-indigo-400 rounded-full neuron shadow-lg"></div>
+                                <div class="w-12 h-12 bg-gradient-to-br from-indigo-200 to-indigo-400 rounded-full neuron shadow-lg"></div>
+                                <div class="w-12 h-12 bg-gradient-to-br from-indigo-200 to-indigo-400 rounded-full neuron shadow-lg"></div>
+                                <div class="w-12 h-12 bg-gradient-to-br from-indigo-200 to-indigo-400 rounded-full neuron shadow-lg"></div>
+                            </div>
+                            <div class="flex flex-col space-y-3">
+                                <div class="w-12 h-12 bg-gradient-to-br from-purple-200 to-purple-400 rounded-full neuron shadow-lg"></div>
+                                <div class="w-12 h-12 bg-gradient-to-br from-purple-200 to-purple-400 rounded-full neuron shadow-lg"></div>
+                                <div class="w-12 h-12 bg-gradient-to-br from-purple-200 to-purple-400 rounded-full neuron shadow-lg"></div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-2">Feature extraction</p>
+                    </div>
+                    
+                    <div class="text-3xl font-bold text-gray-400 animate-pulse">→</div>
+                    
+                    <!-- Output Layer -->
+                    <div class="text-center">
+                        <p class="font-bold text-emerald-600 mb-3">Output Layer</p>
+                        <div class="flex flex-col items-center space-y-3">
+                            <div class="w-24 h-12 bg-gradient-to-r from-emerald-200 to-emerald-400 rounded-lg flex items-center justify-center text-sm font-bold text-emerald-800 neuron shadow-lg">
+                                P(Cat) = 0.8
+                            </div>
+                            <div class="w-24 h-12 bg-gradient-to-r from-amber-200 to-amber-400 rounded-lg flex items-center justify-center text-sm font-bold text-amber-800 neuron shadow-lg">
+                                P(Dog) = 0.2
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-2">Probabilities</p>
+                    </div>
+                </div>
+                <div class="mt-6 p-4 bg-white rounded-lg border border-slate-200">
+                    <p class="text-sm text-slate-600 text-center">
+                        <span class="font-semibold">💡 Key Insight:</span> Each connection has a weight that determines how much influence one neurone has on another. Training adjusts these weights to improve predictions.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="arrow"></div>
+
+        <!-- Step 3: The Training Loop -->
+        <div class="card" id="step3">
+            <h2 class="step-title text-center text-3xl mb-4">Step 3: The Training Loop—Where the Magic Happens ✨</h2>
+            <p class="explanation text-center mb-8 text-lg">Training is an iterative process where we repeatedly show the model our training data and gradually nudge its weights in the right direction. This entire process is repeated for several <span class="highlight">Epochs</span>, with each epoch representing one complete pass through the dataset.</p>
+            
+            <div class="epoch-container">
+                <h3 class="text-2xl font-bold text-center mb-6 text-indigo-700">🔄 Inside a Single Epoch (e.g., Epoch 1 of 100)</h3>
+                <p class="explanation text-center mb-6 text-lg">An epoch is one complete pass through the <span class="font-bold">entire</span> training dataset. To make this computationally manageable and improve convergence, the data is processed in smaller <span class="highlight">Batches</span> (typically 32, 64, or 128 samples).</p>
+
+                <div class="grid lg:grid-cols-2 gap-10">
+                    <!-- Left Column: Forward/Backward Pass -->
+                    <div class="space-y-6">
+                        <div class="card !shadow-lg border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100">
+                            <h4 class="font-bold text-xl mb-3 text-blue-700 flex items-center">
+                                <span class="mr-2">🚀</span> 3a. Forward Pass
+                            </h4>
+                            <p class="explanation mb-4">A batch of data flows through the network from input to output. Each layer transforms the data, and the model produces predictions.</p>
+                            <div class="code-snippet">predictions = model(input_batch)
+# Shape: [batch_size, num_classes]</div>
+                        </div>
+
+                        <div class="text-center my-6 text-4xl text-indigo-500 animate-bounce">↓</div>
+
+                        <div class="card !shadow-lg border-2 border-red-200 bg-gradient-to-br from-red-50 to-red-100">
+                            <h4 class="font-bold text-xl mb-3 text-red-700 flex items-center">
+                                <span class="mr-2">📊</span> 3b. Calculate Loss
+                            </h4>
+                            <p class="explanation mb-4">We compare the model's <span class="text-red-600 font-bold">predictions</span> with the <span class="text-green-600 font-bold">actual labels</span>. The 'Loss' quantifies how wrong the model was—lower is better!</p>
+                            <div class="code-snippet">loss = criterion(predictions, true_labels)
+# Common loss: CrossEntropyLoss for classification</div>
+                        </div>
+
+                        <div class="text-center my-6 text-4xl text-indigo-500 animate-bounce">↓</div>
+
+                        <div class="card !shadow-lg border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-purple-100">
+                            <h4 class="font-bold text-xl mb-3 text-purple-700 flex items-center">
+                                <span class="mr-2">🔄</span> 3c. Backward Pass (Backpropagation)
+                            </h4>
+                            <p class="explanation mb-4">Mathematics to the rescue! We calculate gradients—the direction and magnitude needed to change each weight to reduce the loss. This uses the chain rule from calculus.</p>
+                            <div class="code-snippet">loss.backward()
+# Computes gradients for all parameters</div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Optimiser/Learning Rate -->
+                    <div>
+                        <div class="card !shadow-lg border-2 border-green-200 bg-gradient-to-br from-green-50 to-green-100 h-full">
+                            <h4 class="font-bold text-xl mb-3 text-green-700 flex items-center">
+                                <span class="mr-2">⚡</span> 3d. Update Weights
+                            </h4>
+                            <p class="explanation mb-4">The <span class="highlight">Optimiser</span> (e.g., Adam, SGD, RMSprop) updates the model's weights using the calculated gradients. The magnitude of updates is controlled by the <span class="highlight">Learning Rate</span>.</p>
+                            <div class="code-snippet">optimiser.step()
+optimiser.zero_grad()  # Clear gradients</div>
+                            
+                            <div class="mt-6 p-6 bg-white rounded-xl border border-green-300">
+                                <h5 class="font-bold text-green-800 text-lg mb-3 flex items-center">
+                                    <span class="mr-2">🎯</span> The Learning Rate (LR)
+                                </h5>
+                                <p class="text-sm text-green-700 mb-4">A crucial hyperparameter controlling the step size of weight updates. Think of it as walking speed towards the optimal solution.</p>
+                                
+                                <div class="grid gap-3">
+                                    <div class="flex items-start space-x-3 p-3 bg-red-50 rounded-lg border border-red-200">
+                                        <span class="text-red-500 font-bold">⚠️</span>
+                                        <div>
+                                            <div class="font-bold text-red-700">Too High (e.g., 0.1+):</div>
+                                            <div class="text-sm text-red-600">May overshoot optimal solutions, causing oscillations or divergence</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                                        <span class="text-yellow-500 font-bold">🐌</span>
+                                        <div>
+                                            <div class="font-bold text-yellow-700">Too Low (e.g., 0.00001):</div>
+                                            <div class="text-sm text-yellow-600">Extremely slow convergence, may get stuck in local minima</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-start space-x-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                                        <span class="text-green-500 font-bold">✅</span>
+                                        <div>
+                                            <div class="font-bold text-green-700">Just Right (e.g., 0.001-0.01):</div>
+                                            <div class="text-sm text-green-600">Balanced convergence speed and stability</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 p-6 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200">
+                    <p class="explanation text-center text-lg font-medium">
+                        <span class="font-bold text-indigo-700">🔄 The Loop Continues:</span> Steps 3a→3b→3c→3d repeat for every batch in the dataset. Once all batches are processed, one epoch is complete! The process then repeats for the next epoch.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="arrow"></div>
+
+        <!-- Step 4: Validation and Results -->
+        <div class="card" id="step4">
+            <div class="flex items-center mb-6">
+                 <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                <div>
+                    <h2 class="step-title">Step 4: Validation & Progress Monitoring</h2>
+                    <p class="explanation">After each epoch, we evaluate the model on the <span class="font-bold text-teal-600">Validation Set</span>. This provides an unbiased estimate of how well our model generalises to new, unseen data—the ultimate test of machine learning success.</p>
+                </div>
+            </div>
+            
+            <div class="grid lg:grid-cols-3 gap-6 mb-8">
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
+                    <h3 class="font-bold text-blue-700 mb-2 flex items-center">
+                        <span class="mr-2">🎯</span> Training Metrics
+                    </h3>
+                    <p class="text-sm text-blue-600">Measured on data the model has seen during training</p>
+                </div>
+                <div class="bg-gradient-to-br from-teal-50 to-teal-100 p-6 rounded-xl border border-teal-200">
+                    <h3 class="font-bold text-teal-700 mb-2 flex items-center">
+                        <span class="mr-2">✅</span> Validation Metrics
+                    </h3>
+                    <p class="text-sm text-teal-600">Measured on unseen data during training to detect overfitting</p>
+                </div>
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl border border-purple-200">
+                    <h3 class="font-bold text-purple-700 mb-2 flex items-center">
+                        <span class="mr-2">🔬</span> Test Metrics
+                    </h3>
+                    <p class="text-sm text-purple-600">Final evaluation on completely held-out data</p>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="font-bold text-xl text-center mb-4 text-slate-700">📈 Monitoring Performance Over Epochs</h3>
+                <p class="explanation text-center mb-6 text-lg">We plot essential metrics like Loss and Accuracy to visualise learning progress and detect potential issues like overfitting or underfitting.</p>
+                
+                <div class="grid lg:grid-cols-2 gap-10">
+                    
+                    
+                    <!-- Loss Chart -->
+                    <div class="text-center">
+                        <h4 class="font-bold text-lg mb-4 text-slate-700">📉 Loss vs. Epochs</h4>
+                        <div class="chart-container">
+                            <!-- Y-axis labels -->
+                            <div class="label font-bold" style="bottom: 30px; left: -40px; transform: rotate(-90deg);">Low Loss</div>
+                            <div class="label font-bold" style="top: 15px; left: -40px; transform: rotate(-90deg);">High Loss</div>
+                            <!-- X-axis labels -->
+                            <div class="label font-bold" style="bottom: -25px; left: 25px;">0</div>
+                            <div class="label font-bold" style="bottom: -25px; right: 25px;">100</div>
+                            <div class="label font-bold" style="bottom: -60px; left: 50%; transform: translateX(-50%);">Epochs</div>
+                            
+                            <!-- Training Loss Line (Blue) - Going down -->
+                            <div class="chart-line" style="width: 220px; bottom: 60px; left: 40px; transform: rotate(25deg); background: linear-gradient(45deg, #3b82f6, #1d4ed8);"></div>
+                            
+                            <!-- Validation Loss Line (Green) - Going down -->
+                            <div class="chart-line" style="width: 230px; bottom: 90px; left: 40px; transform: rotate(20deg); background: linear-gradient(45deg, #10b981, #047857);"></div>
+                        </div>
+                        
+                        <!-- Legend for Loss Chart -->
+                        <div class="mt-4 flex justify-center space-x-4">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-4 h-1 bg-gradient-to-r from-blue-500 to-blue-700 rounded"></div>
+                                <span class="text-sm font-medium text-blue-600">📚 Training Loss</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-4 h-1 bg-gradient-to-r from-green-500 to-green-700 rounded"></div>
+                                <span class="text-sm font-medium text-green-600">✅ Validation Loss</span>
+                            </div>
+                        </div>
+                        <br>
+                        <div class="mt-4 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border border-blue-200">
+                            <p class="text-sm font-medium text-slate-700">
+                                <span class="text-green-600 font-bold">✅ Ideal:</span> Both curves should decrease together<br>
+                                <span class="text-red-600 font-bold">⚠️ Overfitting:</span> Training loss decreases but validation loss increases
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Accuracy Chart -->
+                    <div class="text-center">
+                        <h4 class="font-bold text-lg mb-4 text-slate-700">📈 Accuracy vs. Epochs</h4>
+                        <div class="chart-container">
+                            <!-- Y-axis labels -->
+                            <div class="label font-bold" style="bottom: 30px; left: -40px; transform: rotate(-90deg);">Low Acc.</div>
+                            <div class="label font-bold" style="top: 15px; left: -40px; transform: rotate(-90deg);">High Acc.</div>
+                            <!-- X-axis labels -->
+                            <div class="label font-bold" style="bottom: -25px; left: 25px;">0</div>
+                            <div class="label font-bold" style="bottom: -25px; right: 25px;">100</div>
+                            <div class="label font-bold" style="bottom: -60px; left: 50%; transform: translateX(-50%);">Epochs</div>
+                            
+                            <!-- Training Accuracy Line (Blue) -->
+                            <div class="chart-line" style="width: 220px; bottom: 90px; left: 40px; transform: rotate(-25deg); background: linear-gradient(45deg, #3b82f6, #1d4ed8);"></div>
+
+                            <!-- Validation Accuracy Line (Green) -->
+                            <div class="chart-line" style="width: 230px; bottom: 60px; left: 40px; transform: rotate(-20deg); background: linear-gradient(45deg, #10b981, #047857);"></div>
+                        </div>
+                        
+                        <!-- Legend for Accuracy Chart -->
+                        <div class="mt-4 flex justify-center space-x-4">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-4 h-1 bg-gradient-to-r from-blue-500 to-blue-700 rounded"></div>
+                                <span class="text-sm font-medium text-blue-600">📚 Training Accuracy</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-4 h-1 bg-gradient-to-r from-green-500 to-green-700 rounded"></div>
+                                <span class="text-sm font-medium text-green-600">✅ Validation Accuracy</span>
+                            </div>
+                        </div>
+                        <br>
+                        <div class="mt-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
+                            <p class="text-sm font-medium text-slate-700">
+                                <span class="text-green-600 font-bold">✅ Target:</span> Both accuracies should increase and converge<br>
+                                <span class="text-blue-600 font-bold">📊 Gap:</span> Small difference indicates good generalisation
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 p-6 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200">
+                    <h4 class="font-bold text-lg text-indigo-700 mb-3 flex items-center">
+                        <span class="mr-2">🎯</span> Key Insights from Monitoring
+                    </h4>
+                    <div class="grid md:grid-cols-2 gap-4 text-sm">
+                        <div class="space-y-2">
+                            <p><span class="font-bold text-green-600">• Convergence:</span> Metrics stabilise, indicating optimal training duration</p>
+                            <p><span class="font-bold text-orange-600">• Early Stopping:</span> Halt training when validation metrics plateau</p>
+                        </div>
+                        <div class="space-y-2">
+                            <p><span class="font-bold text-blue-600">• Learning Rate:</span> Adjust if loss oscillates or decreases too slowly</p>
+                            <p><span class="font-bold text-purple-600">• Architecture:</span> Modify model complexity based on performance patterns</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="arrow"></div>
+
+        <!-- Conclusion -->
+        <div class="card text-center bg-gradient-to-br from-indigo-600 to-purple-700 text-white" id="conclusion">
+            <div class="relative">
+                <div class="absolute inset-0 bg-white opacity-10 rounded-lg"></div>
+                <div class="relative z-10 p-8">
+                    <h2 class="text-3xl font-bold mb-6 flex items-center justify-center">
+                        <span class="mr-3">🎉</span> Training Complete!
+                    </h2>
+                    <p class="text-xl mb-6 leading-relaxed">
+                        After many epochs of iterative learning, our model has discovered the optimal weights! We now have a "trained" classifier with sophisticated pattern recognition capabilities, ready to make accurate predictions on completely new, unseen data.
+                    </p>
+                    
+                    <div class="grid md:grid-cols-3 gap-6 mt-8">
+                        <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
+                            <div class="text-2xl mb-2">🎯</div>
+                            <h3 class="font-bold text-lg mb-2">Model Deployment</h3>
+                            <p class="text-sm opacity-90">If validation metrics meet our requirements, the model is ready for real-world deployment</p>
+                        </div>
+                        <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
+                            <div class="text-2xl mb-2">🔬</div>
+                            <h3 class="font-bold text-lg mb-2">Final Testing</h3>
+                            <p class="text-sm opacity-90">Evaluate on the test set for an unbiased performance assessment</p>
+                        </div>
+                        <div class="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
+                            <div class="text-2xl mb-2">🚀</div>
+                            <h3 class="font-bold text-lg mb-2">Continuous Learning</h3>
+                            <p class="text-sm opacity-90">Monitor performance and retrain with new data as needed</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 p-6 bg-white bg-opacity-20 rounded-xl backdrop-blur-sm">
+                        <h3 class="font-bold text-lg mb-3">🧠 What We've Accomplished</h3>
+                        <div class="text-left space-y-2 text-sm">
+                            <p>• <span class="font-semibold">Transformed</span> random weights into meaningful feature detectors</p>
+                            <p>• <span class="font-semibold">Learnt</span> complex patterns and relationships in the data</p>
+                            <p>• <span class="font-semibold">Optimised</span> millions of parameters through gradient descent</p>
+                            <p>• <span class="font-semibold">Achieved</span> generalisation to unseen examples</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-16 text-center text-slate-500 text-sm">
+            <p>© 2025 Soumick Chatterjee • Created for Educational Purposes</p>
+            <p class="mt-2">This guide is part of his Introduction to Machine Learning course</p>
+        </footer>
+
+    </div>
+
+</body>
+</html>

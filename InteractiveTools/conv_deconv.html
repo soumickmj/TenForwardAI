@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convolution and Deconvolution Visualisation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* Tailwind gray-900 */
+            color: #F9FAFB; /* Tailwind gray-50 */
+        }
+        .grid-container {
+            display: grid;
+            border: 1px solid #4B5563; /* Tailwind gray-600 */
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+        }
+        .grid-cell {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 600;
+            font-size: 1rem;
+            border: 1px solid #374151; /* Tailwind gray-700 */
+            transition: background-color 0.3s ease, transform 0.3s ease, color 0.3s ease;
+            position: relative;
+        }
+        .kernel-overlay {
+            position: absolute;
+            display: grid;
+            pointer-events: none;
+            transition: top 0.5s ease-in-out, left 0.5s ease-in-out;
+            border: 2px solid #34D399; /* Tailwind emerald-400 */
+            box-shadow: 0 0 20px #34D399;
+            z-index: 10;
+        }
+        .kernel-cell {
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(52, 211, 153, 0.5);
+        }
+        .highlight-input {
+            background-color: rgba(52, 211, 153, 0.3);
+            transform: scale(1.05);
+        }
+        .highlight-output {
+            background-color: #60A5FA; /* Tailwind blue-400 */
+            color: #111827;
+            transform: scale(1.1);
+            box-shadow: 0 0 15px #60A5FA;
+        }
+        .highlight-kernel {
+            background-color: #34D399; /* Tailwind emerald-400 */
+            color: #111827;
+        }
+        .operation-display {
+            font-family: 'monospace';
+            background-color: #1F2937; /* Tailwind gray-800 */
+            border-radius: 0.5rem;
+            padding: 1rem;
+            min-height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .control-button {
+            transition: all 0.2s ease;
+        }
+        .control-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .control-button:active {
+            transform: translateY(0);
+        }
+        .arrow {
+            font-size: 3rem;
+            color: #6B7280; /* Tailwind gray-500 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .section-hover {
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        .section-hover:hover {
+            opacity: 1 !important;
+            transform: scale(1.02);
+        }
+        .section-dimmed {
+            opacity: 0.3 !important;
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-400">Convolution & Deconvolution</h1>
+            <p class="mt-2 text-lg text-gray-400">Visualising the core of CNNs</p>
+            <div class="mt-4 flex justify-center">
+                <div class="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-lg px-6 py-3 shadow-lg">
+                    <p class="text-sm text-gray-300">
+                        <span class="text-emerald-400 font-semibold">Created by:</span> 
+                        <span class="text-gray-200 font-medium"><a href="https://www.soumick.com">Soumick Chatterjee, PhD</a></span>
+                        <span class="text-gray-500 mx-2">•</span>
+                        <span class="text-blue-400">Interactive ML Visualisation</span>
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        🎓 Teaching Tool for an Introduction to Machine Learning Course
+                    </p>
+                </div>
+            </div>
+        </header>
+
+        <!-- CONTROLS FOR CONVOLUTION -->
+        <div class="flex justify-center items-center space-x-4 mb-8 bg-gray-800 p-4 rounded-lg shadow-lg">
+            <button id="startConvBtn" class="control-button bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-6 rounded-lg">Start Convolution</button>
+            <button id="resetBtn" class="control-button bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg">Reset</button>
+            <div class="flex items-center space-x-2 text-gray-300">
+                <label for="speedRange">Speed:</label>
+                <input type="range" id="speedRange" min="50" max="1000" value="500" class="w-32">
+            </div>
+        </div>
+        <div id="explanationBox" class="text-center mb-8 p-4 bg-gray-800 rounded-lg shadow-inner min-h-[50px] flex items-center justify-center">
+            <p class="text-lg text-gray-300">Press 'Start Convolution' to begin.</p>
+        </div>
+
+        <!-- CONVOLUTION (ENCODER) SECTION -->
+        <div id="convolution-section" class="section-hover mb-12">
+            <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-2 gap-2">
+                <h2 class="text-2xl font-semibold text-center md:text-left mb-2 md:mb-0">1. Convolution (Encoder Path)</h2>
+                <div class="flex flex-wrap gap-2 items-center bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-xs text-gray-200 w-fit mx-auto md:mx-0">
+                    <label>Input: <input id="inputSizeInput" type="number" min="3" max="15" value="7" class="w-12 bg-gray-800 border border-gray-600 rounded text-center mx-1"/></label>
+                    <label>Kernel: <input id="kernelSizeInput" type="number" min="2" max="7" value="3" class="w-12 bg-gray-800 border border-gray-600 rounded text-center mx-1"/></label>
+                    <label>Stride: <input id="strideInput" type="number" min="1" max="5" value="1" class="w-12 bg-gray-800 border border-gray-600 rounded text-center mx-1"/></label>
+                    <label>Padding: <input id="paddingInput" type="number" min="0" max="5" value="0" class="w-12 bg-gray-800 border border-gray-600 rounded text-center mx-1"/></label>
+                    <label>In Ch: <input id="inputChannelsInput" type="number" min="1" max="4" value="1" class="w-12 bg-gray-800 border border-gray-600 rounded text-center mx-1"/></label>
+                    <label>Out Ch: <input id="outputChannelsInput" type="number" min="1" max="4" value="1" class="w-12 bg-gray-800 border border-gray-600 rounded text-center mx-1"/></label>
+                    <span id="outputSizeDisplay" class="ml-2 text-emerald-300 font-semibold">Output: 5×5</span>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr_auto_1fr] gap-4 items-center">
+                <!-- Input Grid -->
+                <div class="flex flex-col items-center">
+                    <h3 class="text-xl font-medium mb-3">Input Image</h3>
+                    <div id="inputChannelsContainer" class="flex flex-col gap-2"></div>
+                </div>
+
+                <div class="arrow text-emerald-400">∗</div> <!-- Convolution Operator -->
+
+                <!-- Kernel -->
+                <div class="flex flex-col items-center">
+                    <h3 class="text-xl font-medium mb-3">Kernel / Filter</h3>
+                    <div id="kernelChannelsContainer" class="flex flex-col gap-2"></div>
+                </div>
+
+                <div class="arrow">&#10140;</div>
+
+                <!-- Output Feature Map -->
+                <div class="flex flex-col items-center">
+                    <h3 class="text-xl font-medium mb-3">Output Feature Map</h3>
+                    <div id="outputChannelsContainer" class="flex flex-col gap-2"></div>
+                </div>
+            </div>
+            <div class="mt-6">
+                <h4 class="text-lg font-medium text-center mb-2">Calculation</h4>
+                <div id="conv-operation" class="operation-display text-emerald-300"></div>
+            </div>
+        </div>
+        
+        <!-- CONTROLS FOR DECONVOLUTION -->
+        <div class="flex justify-center items-center space-x-4 mb-8 bg-gray-800 p-4 rounded-lg shadow-lg mt-12">
+            <button id="startDeconvBtn" class="control-button bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg" disabled>Start Deconvolution</button>
+            <button id="resetDeconvBtn" class="control-button bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg">Reset Deconvolution</button>
+            <div class="flex items-center space-x-2 text-gray-300">
+                <label for="deconvSpeedRange">Speed:</label>
+                <input type="range" id="deconvSpeedRange" min="50" max="1000" value="500" class="w-32">
+            </div>
+        </div>
+
+        <!-- DECONVOLUTION (DECODER) SECTION -->
+        <div id="deconvolution-section" class="section-hover mt-16 pt-8 border-t-2 border-gray-700">
+            <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-2 gap-2">
+                <h2 class="text-2xl font-semibold text-center md:text-left mb-2 md:mb-0">2. Deconvolution (Decoder Path)</h2>
+                <div class="flex flex-wrap gap-2 items-center bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-xs text-gray-200 w-fit mx-auto md:mx-0">
+                    <label>Input: <input id="deconvInputSizeInput" type="number" min="3" max="15" value="5" class="w-12 bg-gray-800 border border-gray-600 rounded text-center mx-1"/></label>
+                    <label>Kernel: <input id="deconvKernelSizeInput" type="number" min="2" max="7" value="3" class="w-12 bg-gray-800 border border-gray-600 rounded text-center mx-1"/></label>
+                    <label>Stride: <input id="deconvStrideInput" type="number" min="1" max="5" value="1" class="w-12 bg-gray-800 border border-gray-600 rounded text-center mx-1"/></label>
+                    <label>Padding: <input id="deconvPaddingInput" type="number" min="0" max="5" value="0" class="w-12 bg-gray-800 border border-gray-600 rounded text-center mx-1"/></label>
+                    <label>In Ch: <input id="deconvInputChannelsInput" type="number" min="1" max="4" value="1" class="w-12 bg-gray-800 border border-gray-600 rounded text-center mx-1"/></label>
+                    <label>Out Ch: <input id="deconvOutputChannelsInput" type="number" min="1" max="4" value="1" class="w-12 bg-gray-800 border border-gray-600 rounded text-center mx-1"/></label>
+                    <span id="deconvOutputSizeDisplay" class="ml-2 text-blue-300 font-semibold">Output: 7×7</span>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr_auto_1fr] gap-4 items-center">
+                <!-- Input Feature Map -->
+                <div class="flex flex-col items-center">
+                    <h3 class="text-xl font-medium mb-3">Input Feature Map</h3>
+                    <div id="deconvInputChannelsContainer" class="flex flex-col gap-2"></div>
+                </div>
+
+                <div class="arrow text-blue-400">∗</div>
+
+                <!-- Kernel -->
+                <div class="flex flex-col items-center">
+                    <h3 class="text-xl font-medium mb-3">Kernel / Filter</h3>
+                    <div id="deconvKernelChannelsContainer" class="flex flex-col gap-2"></div>
+                </div>
+
+                <div class="arrow">&#10140;</div>
+
+                <!-- Reconstructed Output -->
+                <div class="flex flex-col items-center">
+                    <h3 class="text-xl font-medium mb-3">Reconstructed Output</h3>
+                    <div id="reconstructedChannelsContainer" class="flex flex-col gap-2"></div>
+                </div>
+            </div>
+             <div class="mt-6">
+                <h4 class="text-lg font-medium text-center mb-2">Calculation</h4>
+                <div id="deconv-operation" class="operation-display text-blue-300"></div>
+            </div>
+        </div>
+
+        <!-- MULTI-CHANNEL OPERATIONS EXPLANATION -->
+        <div class="mb-8 bg-gradient-to-r from-gray-800/90 to-gray-900/90 backdrop-blur-sm border border-gray-700/50 rounded-xl p-6 shadow-xl">
+            <h2 class="text-2xl font-bold text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-400">
+                Multi-Channel Convolution & Deconvolution Mathematics
+            </h2>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Convolution Explanation -->
+                <div class="bg-emerald-900/20 border border-emerald-700/30 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-emerald-300 mb-3">🔄 Multi-Channel Convolution</h3>
+                    <div class="text-sm text-gray-300 space-y-2">
+                        <p><strong class="text-emerald-400">Key Concept:</strong> Each output channel is computed by summing convolutions across ALL input channels.</p>
+                        <div class="bg-gray-800/50 p-3 rounded font-mono text-xs">
+                            <strong class="text-emerald-300">Formula:</strong><br/>
+                            Output[out_ch][r,c] = Σ<sub>in_ch=0</sub><sup>C_in-1</sup> Σ<sub>kr=0</sub><sup>K-1</sup> Σ<sub>kc=0</sub><sup>K-1</sup><br/>
+                            &nbsp;&nbsp;Input[in_ch][r×stride+kr, c×stride+kc] × Kernel[out_ch][in_ch][kr,kc]
+                        </div>
+                        <p><strong class="text-emerald-400">Dimensions:</strong></p>
+                        <ul class="list-disc list-inside text-xs space-y-1 ml-2">
+                            <li>Input: [C_in, H_in, W_in]</li>
+                            <li>Kernel: [C_out, C_in, K_h, K_w]</li>
+                            <li>Output: [C_out, H_out, W_out]</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Deconvolution Explanation -->
+                <div class="bg-blue-900/20 border border-blue-700/30 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-blue-300 mb-3">🔄 Multi-Channel Deconvolution</h3>
+                    <div class="text-sm text-gray-300 space-y-2">
+                        <p><strong class="text-blue-400">Key Concept:</strong> Transposed convolution works by placing scaled kernels at output positions for each input value.</p>
+                        <div class="bg-gray-800/50 p-3 rounded font-mono text-xs">
+                            <strong class="text-blue-300">Process:</strong><br/>
+                            1. For each input[in_ch][r,c] value:<br/>
+                            2. For each output channel out_ch:<br/>
+                            3. Place input_value × kernel[out_ch][in_ch] at output[out_ch][r×stride-pad, c×stride-pad]<br/>
+                            4. Accumulate overlapping contributions
+                        </div>
+                        <p><strong class="text-blue-400">Dimensions:</strong></p>
+                        <ul class="list-disc list-inside text-xs space-y-1 ml-2">
+                            <li>Input: [C_in, H_in, W_in]</li>
+                            <li>Kernel: [C_out, C_in, K_h, K_w]</li>
+                            <li>Output: [C_out, H_out, W_out]</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 bg-gray-800/50 border border-gray-600/30 rounded-lg p-4">
+                <h4 class="text-md font-semibold text-yellow-300 mb-2">💡 Important Notes:</h4>
+                <ul class="text-sm text-gray-300 space-y-1 list-disc list-inside">
+                    <li><strong>Channel Interaction:</strong> Each kernel connects ALL input channels to ONE output channel</li>
+                    <li><strong>Kernel Shape:</strong> For C_in input and C_out output channels, kernel has shape [C_out, C_in, K_h, K_w]</li>
+                    <li><strong>Computation:</strong> Each output channel value is the sum of contributions from all input channels</li>
+                    <li>
+                        <strong>Colour Coding:</strong>
+                        Input channels use warm colours:
+                        <span style="color:#F97316;">&#9679;</span> orange,
+                        <span style="color:#EF4444;">&#9679;</span> red,
+                        <span style="color:#F59E0B;">&#9679;</span> amber,
+                        <span style="color:#EC4899;">&#9679;</span> pink;
+                        output channels use cool colours:
+                        <span style="color:#3B82F6;">&#9679;</span> blue,
+                        <span style="color:#10B981;">&#9679;</span> green,
+                        <span style="color:#8B5CF6;">&#9679;</span> purple,
+                        <span style="color:#06B6D4;">&#9679;</span> cyan
+                    </li>
+                </ul>
+            </div>
+        </div>        
+
+        <!-- Footer -->
+        <footer class="mt-16 text-center text-slate-500 text-sm">
+            <p>© 2025 Soumick Chatterjee • Created for Educational Purposes</p>
+            <p class="mt-2">This guide is part of his Introduction to Machine Learning course</p>
+        </footer>
+
+    </div>
+
+    <script>
+        // --- DYNAMIC CONFIGURATION ---
+        let INPUT_SIZE = 7;
+        let KERNEL_SIZE = 3;
+        let STRIDE = 1;
+        let PADDING = 0;
+        let INPUT_CHANNELS = 1;
+        let OUTPUT_CHANNELS = 1;
+
+        // Separate parameters for deconvolution
+        let DECONV_INPUT_SIZE = 5;
+        let DECONV_KERNEL_SIZE = 3;
+        let DECONV_STRIDE = 1;
+        let DECONV_PADDING = 0;
+        let DECONV_INPUT_CHANNELS = 1;
+        let DECONV_OUTPUT_CHANNELS = 1;
+        let DECONV_OUTPUT_SIZE = 7;
+
+        function makeMatrix(rows, cols, fill=0) {
+            return Array(rows).fill(0).map(() => Array(cols).fill(fill));
+        }
+
+        function makeMultiChannelMatrix(channels, rows, cols, fill=0) {
+            return Array(channels).fill(0).map(() => makeMatrix(rows, cols, fill));
+        }
+
+        function makeKernelMatrix(outputChannels, inputChannels, kernelSize, fill=0) {
+            return Array(outputChannels).fill(0).map(() => 
+                Array(inputChannels).fill(0).map(() => makeMatrix(kernelSize, kernelSize, fill))
+            );
+        }
+
+        // Create a matrix with zero padding around it
+        function padMatrix(matrix, pad) {
+            const n = matrix.length;
+            const m = matrix[0].length;
+            const newRows = n + 2 * pad;
+            const newCols = m + 2 * pad;
+            let out = makeMatrix(newRows, newCols, 0);
+            for (let r = 0; r < n; r++) {
+                for (let c = 0; c < m; c++) {
+                    out[r + pad][c + pad] = matrix[r][c];
+                }
+            }
+            return out;
+        }
+
+        // Default input: random values between 0 and 9
+        function getDefaultInputMatrix(size) {
+            let m = makeMatrix(size, size, 0);
+            for(let r=0; r<size; r++) {
+                for(let c=0; c<size; c++) {
+                    m[r][c] = Math.floor(Math.random() * 10);
+                }
+            }
+            return m;
+        }
+
+        function getDefaultMultiChannelInput(channels, size) {
+            return Array(channels).fill(0).map(() => getDefaultInputMatrix(size));
+        }
+
+        // Default kernel: random values between 0 and 9
+        function getDefaultKernelMatrix(size) {
+            let m = makeMatrix(size, size, 0);
+            for(let r=0; r<size; r++) {
+                for(let c=0; c<size; c++) {
+                    m[r][c] = Math.floor(Math.random() * 10);
+                }
+            }
+            return m;
+        }
+
+        function getDefaultMultiChannelKernel(outputChannels, inputChannels, kernelSize) {
+            return Array(outputChannels).fill(0).map(() => 
+                Array(inputChannels).fill(0).map(() => getDefaultKernelMatrix(kernelSize))
+            );
+        }
+
+    // Global variables to maintain initial random values
+    let inputMatrix, kernelMatrix, deconvInputMatrix, deconvKernelMatrix;
+    let outputMatrix, reconstructedMatrix;
+    let OUTPUT_SIZE = Math.floor((INPUT_SIZE + 2 * PADDING - KERNEL_SIZE) / STRIDE) + 1;
+
+        // --- DOM ELEMENTS ---
+        const elements = {
+            inputChannelsContainer: document.getElementById('inputChannelsContainer'),
+            kernelChannelsContainer: document.getElementById('kernelChannelsContainer'),
+            outputChannelsContainer: document.getElementById('outputChannelsContainer'),
+            deconvInputChannelsContainer: document.getElementById('deconvInputChannelsContainer'),
+            deconvKernelChannelsContainer: document.getElementById('deconvKernelChannelsContainer'),
+            reconstructedChannelsContainer: document.getElementById('reconstructedChannelsContainer'),
+            kernelOverlay: null, // created dynamically
+            startConvBtn: document.getElementById('startConvBtn'),
+            startDeconvBtn: document.getElementById('startDeconvBtn'),
+            resetBtn: document.getElementById('resetBtn'),
+            resetDeconvBtn: document.getElementById('resetDeconvBtn'),
+            speedRange: document.getElementById('speedRange'),
+            deconvSpeedRange: document.getElementById('deconvSpeedRange'),
+            explanationBox: document.getElementById('explanationBox').querySelector('p'),
+            convOperation: document.getElementById('conv-operation'),
+            deconvOperation: document.getElementById('deconv-operation'),
+            convSection: document.getElementById('convolution-section'),
+            deconvSection: document.getElementById('deconvolution-section')
+        };
+        // --- RESET DECONVOLUTION ---
+        function resetDeconvolution() {
+            // Stop deconv animation
+            isAnimating = false;
+            cancelAnimationFrame(animationFrameId);
+            deconvInputMatrix = getDefaultMultiChannelInput(DECONV_INPUT_CHANNELS, DECONV_INPUT_SIZE);
+            reconstructedMatrix = makeMultiChannelMatrix(DECONV_OUTPUT_CHANNELS, DECONV_OUTPUT_SIZE, DECONV_OUTPUT_SIZE, 0);
+            createMultiChannelGrids(elements.deconvInputChannelsContainer, deconvInputMatrix, DECONV_INPUT_SIZE, 'deconv-input', false, 0, 'input');
+            createMultiChannelGrids(elements.reconstructedChannelsContainer, reconstructedMatrix, DECONV_OUTPUT_SIZE, 'reconstructed', false, 0, 'output');
+            elements.deconvOperation.textContent = '';
+            // Remove any residual highlights
+            const cells = document.querySelectorAll('[id^="reconstructed-ch"]');
+            cells.forEach(cell => cell.classList.remove('highlight-output'));
+        }
+
+        // --- STATE ---
+        let animationSpeed = 500;
+        let deconvAnimationSpeed = 500;
+        let isAnimating = false;
+        let animationFrameId;
+        let convDone = false;
+        
+        // --- UTILITY FUNCTIONS ---
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        const setExplanation = (text, color = 'text-gray-300') => {
+            elements.explanationBox.innerHTML = text;
+            elements.explanationBox.className = `text-lg ${color} transition-all duration-300`;
+        };
+
+        // --- GRID CREATION ---
+        // Display the matrix, highlighting padding if required
+        function createGrid(container, matrix, size, idPrefix, showPadding = false, pad = 0) {
+            container.innerHTML = '';
+            container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+            for (let r = 0; r < size; r++) {
+                for (let c = 0; c < size; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.id = `${idPrefix}-${r}-${c}`;
+                    cell.textContent = matrix[r][c];
+                    if (showPadding && (r < pad || r >= size - pad || c < pad || c >= size - pad)) {
+                        cell.style.background = '#222b';
+                        cell.style.border = '2px dashed #6B7280';
+                        cell.style.color = '#6B7280';
+                    }
+                    container.appendChild(cell);
+                }
+            }
+        }
+
+        function createMultiChannelGrids(container, matrices, size, idPrefix, showPadding = false, pad = 0, channelType = 'input') {
+            container.innerHTML = '';
+            // Different color schemes for input and output channels
+            const inputColors = ['#F97316', '#EF4444', '#F59E0B', '#EC4899']; // warm colors: orange, red, amber, pink
+            const outputColors = ['#3B82F6', '#10B981', '#8B5CF6', '#06B6D4']; // cool colors: blue, green, purple, cyan
+            const colors = channelType === 'input' ? inputColors : outputColors;
+            
+            matrices.forEach((matrix, channelIdx) => {
+                const channelContainer = document.createElement('div');
+                channelContainer.className = 'flex flex-col items-center mb-2';
+                
+                const label = document.createElement('div');
+                label.className = 'text-xs font-medium mb-1';
+                label.style.color = colors[channelIdx % colors.length];
+                label.textContent = `Ch ${channelIdx + 1}`;
+                channelContainer.appendChild(label);
+                
+                const gridContainer = document.createElement('div');
+                gridContainer.className = 'grid-container relative';
+                gridContainer.style.border = `2px solid ${colors[channelIdx % colors.length]}`;
+                
+                createGrid(gridContainer, matrix, size, `${idPrefix}-ch${channelIdx}`, showPadding, pad);
+                channelContainer.appendChild(gridContainer);
+                container.appendChild(channelContainer);
+            });
+        }
+
+        function createKernelGrids(container, kernelMatrix, kernelSize, idPrefix) {
+            container.innerHTML = '';
+            // Use consistent color schemes: warm for input channels, cool for output channels
+            const inputColors = ['#F97316', '#EF4444', '#F59E0B', '#EC4899']; // warm colors: orange, red, amber, pink
+            const outputColors = ['#3B82F6', '#10B981', '#8B5CF6', '#06B6D4']; // cool colors: blue, green, purple, cyan
+            
+            kernelMatrix.forEach((outputKernel, outIdx) => {
+                const outputContainer = document.createElement('div');
+                outputContainer.className = 'flex flex-col items-center mb-3';
+                
+                const outputLabel = document.createElement('div');
+                outputLabel.className = 'text-xs font-medium mb-2';
+                outputLabel.style.color = outputColors[outIdx % outputColors.length];
+                outputLabel.textContent = `Out Ch ${outIdx + 1}`;
+                outputContainer.appendChild(outputLabel);
+                
+                const inputContainer = document.createElement('div');
+                inputContainer.className = 'flex flex-row gap-1';
+                
+                outputKernel.forEach((inputKernel, inIdx) => {
+                    const kernelContainer = document.createElement('div');
+                    kernelContainer.className = 'flex flex-col items-center';
+                    
+                    const inputLabel = document.createElement('div');
+                    inputLabel.className = 'text-xs mb-1';
+                    inputLabel.style.color = inputColors[inIdx % inputColors.length];
+                    inputLabel.textContent = `In ${inIdx + 1}`;
+                    kernelContainer.appendChild(inputLabel);
+                    
+                    const gridContainer = document.createElement('div');
+                    gridContainer.className = 'grid-container';
+                    gridContainer.style.border = `1px solid ${inputColors[inIdx % inputColors.length]}`;
+                    
+                    createGrid(gridContainer, inputKernel, kernelSize, `${idPrefix}-out${outIdx}-in${inIdx}`);
+                    kernelContainer.appendChild(gridContainer);
+                    inputContainer.appendChild(kernelContainer);
+                });
+                
+                outputContainer.appendChild(inputContainer);
+                container.appendChild(outputContainer);
+            });
+        }
+
+        function createKernelOverlay(pad = 0) {
+            const overlay = document.createElement('div');
+            overlay.className = 'kernel-overlay';
+            overlay.style.gridTemplateColumns = `repeat(${KERNEL_SIZE}, 1fr)`;
+            for (let i = 0; i < KERNEL_SIZE * KERNEL_SIZE; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'kernel-cell';
+                overlay.appendChild(cell);
+            }
+            elements.inputGrid.appendChild(overlay);
+            elements.kernelOverlay = overlay;
+            // Save the padding for animation
+            overlay.dataset.pad = pad;
+        }
+        
+        function createDeconvOverlay() {
+            const overlay = document.createElement('div');
+            overlay.className = 'kernel-overlay';
+            overlay.style.borderColor = '#60A5FA'; // blue-400
+            overlay.style.boxShadow = '0 0 20px #60A5FA';
+            overlay.style.gridTemplateColumns = `repeat(${DECONV_KERNEL_SIZE}, 1fr)`;
+            for (let i = 0; i < DECONV_KERNEL_SIZE * DECONV_KERNEL_SIZE; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'kernel-cell';
+                cell.style.borderColor = 'rgba(96, 165, 250, 0.5)';
+                overlay.appendChild(cell);
+            }
+            elements.reconstructedGrid.appendChild(overlay);
+            return overlay;
+        }
+
+        // --- INITIALISATION ---
+        function resizeOrKeepMatrix(matrix, newSize) {
+            // Resize the matrix maintaining existing values, filling with zeros if necessary
+            let m = makeMatrix(newSize, newSize, 0);
+            if (!matrix) return m;
+            for (let r = 0; r < Math.min(matrix.length, newSize); r++) {
+                for (let c = 0; c < Math.min(matrix[0].length, newSize); c++) {
+                    m[r][c] = matrix[r][c];
+                }
+            }
+            return m;
+        }
+
+        function initialize() {
+            // Update parameters
+            OUTPUT_SIZE = Math.floor((INPUT_SIZE + 2 * PADDING - KERNEL_SIZE) / STRIDE) + 1;
+            // Correct deconvolution output size formula: output = (input - 1) * stride + kernel - 2 * padding
+            DECONV_OUTPUT_SIZE = (DECONV_INPUT_SIZE - 1) * DECONV_STRIDE + DECONV_KERNEL_SIZE - 2 * DECONV_PADDING;
+            
+            // Initialize multi-channel matrices
+            if (!inputMatrix || inputMatrix.length !== INPUT_CHANNELS) {
+                inputMatrix = getDefaultMultiChannelInput(INPUT_CHANNELS, INPUT_SIZE);
+            }
+            if (!kernelMatrix || kernelMatrix.length !== OUTPUT_CHANNELS || kernelMatrix[0].length !== INPUT_CHANNELS) {
+                kernelMatrix = getDefaultMultiChannelKernel(OUTPUT_CHANNELS, INPUT_CHANNELS, KERNEL_SIZE);
+            }
+            if (!deconvInputMatrix || deconvInputMatrix.length !== DECONV_INPUT_CHANNELS) {
+                deconvInputMatrix = getDefaultMultiChannelInput(DECONV_INPUT_CHANNELS, DECONV_INPUT_SIZE);
+            }
+            if (!deconvKernelMatrix || deconvKernelMatrix.length !== DECONV_OUTPUT_CHANNELS || deconvKernelMatrix[0].length !== DECONV_INPUT_CHANNELS) {
+                deconvKernelMatrix = getDefaultMultiChannelKernel(DECONV_OUTPUT_CHANNELS, DECONV_INPUT_CHANNELS, DECONV_KERNEL_SIZE);
+            }
+            
+            outputMatrix = makeMultiChannelMatrix(OUTPUT_CHANNELS, OUTPUT_SIZE, OUTPUT_SIZE, 0);
+            reconstructedMatrix = makeMultiChannelMatrix(DECONV_OUTPUT_CHANNELS, DECONV_OUTPUT_SIZE, DECONV_OUTPUT_SIZE, 0);
+
+            // Update parameter visualisation
+            document.getElementById('outputSizeDisplay').textContent = `Output: ${OUTPUT_SIZE}×${OUTPUT_SIZE}×${OUTPUT_CHANNELS}`;
+            document.getElementById('deconvOutputSizeDisplay').textContent = `Output: ${DECONV_OUTPUT_SIZE}×${DECONV_OUTPUT_SIZE}×${DECONV_OUTPUT_CHANNELS}`;
+
+            // Create multi-channel grids
+            const paddedInputs = inputMatrix.map(channel => padMatrix(channel, PADDING));
+            createMultiChannelGrids(elements.inputChannelsContainer, paddedInputs, INPUT_SIZE + 2 * PADDING, 'input', true, PADDING, 'input');
+            createKernelGrids(elements.kernelChannelsContainer, kernelMatrix, KERNEL_SIZE, 'kernel');
+            createMultiChannelGrids(elements.outputChannelsContainer, outputMatrix, OUTPUT_SIZE, 'output', false, 0, 'output');
+
+            // Deconvolution grids
+            createMultiChannelGrids(elements.deconvInputChannelsContainer, deconvInputMatrix, DECONV_INPUT_SIZE, 'deconv-input', false, 0, 'input');
+            createKernelGrids(elements.deconvKernelChannelsContainer, deconvKernelMatrix, DECONV_KERNEL_SIZE, 'deconv-kernel');
+            createMultiChannelGrids(elements.reconstructedChannelsContainer, reconstructedMatrix, DECONV_OUTPUT_SIZE, 'reconstructed', false, 0, 'output');
+            
+            elements.deconvSection.style.opacity = '0.3';
+            elements.deconvSection.style.transition = 'opacity 0.5s ease-in-out';
+
+            setExplanation("Press 'Start Convolution' or 'Start Deconvolution' to begin.");
+            elements.convOperation.textContent = '';
+            elements.deconvOperation.textContent = '';
+            elements.startConvBtn.disabled = false;
+            elements.startDeconvBtn.disabled = false;
+            convDone = false;
+        }
+
+        // --- RESET FUNCTION ---
+        function reset() {
+            isAnimating = false;
+            cancelAnimationFrame(animationFrameId);
+            outputMatrix = makeMatrix(OUTPUT_SIZE, OUTPUT_SIZE, 0);
+            reconstructedMatrix = makeMatrix(DECONV_OUTPUT_SIZE, DECONV_OUTPUT_SIZE, 0);
+            initialize();
+        }
+
+        // --- ANIMATION CORE ---
+
+        async function animateConvolution() {
+            elements.convSection.style.opacity = '1';
+            elements.deconvSection.style.opacity = '0.3';
+
+            // Use padded input for convolution
+            const paddedInputs = inputMatrix.map(channel => padMatrix(channel, PADDING));
+            const paddedSize = INPUT_SIZE + 2 * PADDING;
+
+            // MULTI-CHANNEL CONVOLUTION EXPLANATION:
+            // For each output position [out_r, out_c]:
+            //   For each output channel out_ch:
+            //     output[out_ch][out_r][out_c] = Σ(over all input channels in_ch) 
+            //       Σ(over kernel k_r, k_c) input[in_ch][in_r + k_r][in_c + k_c] × kernel[out_ch][in_ch][k_r][k_c]
+
+            for (let out_r = 0; out_r < OUTPUT_SIZE; out_r++) {
+                for (let out_c = 0; out_c < OUTPUT_SIZE; out_c++) {
+                    if (!isAnimating) return;
+
+                    const in_r_start = out_r * STRIDE;
+                    const in_c_start = out_c * STRIDE;
+
+                    // For each output channel
+                    for (let out_ch = 0; out_ch < OUTPUT_CHANNELS; out_ch++) {
+                        if (!isAnimating) return;
+
+                        setExplanation(`Computing output[${out_ch + 1}][${out_r},${out_c}] = sum over all ${INPUT_CHANNELS} input channels`, "text-emerald-300");
+                        
+                        let totalSum = 0;
+                        let channelContributions = [];
+                        const highlights = [];
+
+                        // Sum across all input channels (this is the key to multi-channel convolution)
+                        for (let in_ch = 0; in_ch < INPUT_CHANNELS; in_ch++) {
+                            let channelSum = 0;
+                            let channelOperation = `Ch${in_ch + 1}: `;
+
+                            // For each position in the kernel
+                            for (let k_r = 0; k_r < KERNEL_SIZE; k_r++) {
+                                for (let k_c = 0; k_c < KERNEL_SIZE; k_c++) {
+                                    const in_r = in_r_start + k_r;
+                                    const in_c = in_c_start + k_c;
+
+                                    const inputCell = document.getElementById(`input-ch${in_ch}-${in_r}-${in_c}`);
+                                    const kernelCell = document.getElementById(`kernel-out${out_ch}-in${in_ch}-${k_r}-${k_c}`);
+
+                                    if (inputCell) {
+                                        inputCell.classList.add('highlight-input');
+                                        highlights.push(inputCell);
+                                    }
+                                    if (kernelCell) {
+                                        kernelCell.classList.add('highlight-kernel');
+                                        highlights.push(kernelCell);
+                                    }
+
+                                    const inputValue = (in_r >= 0 && in_r < paddedSize && in_c >= 0 && in_c < paddedSize) ? 
+                                        paddedInputs[in_ch][in_r][in_c] : 0;
+                                    const kernelValue = kernelMatrix[out_ch][in_ch][k_r][k_c];
+                                    const product = inputValue * kernelValue;
+                                    channelSum += product;
+
+                                    if (channelOperation.length < 50 && product !== 0) {
+                                        channelOperation += `${inputValue}×${kernelValue} + `;
+                                    }
+                                }
+                            }
+                            
+                            totalSum += channelSum;
+                            channelContributions.push(`${channelOperation.slice(0, -3)} = ${Math.round(channelSum * 100) / 100}`);
+                        }
+
+                        // Show the multi-channel calculation breakdown
+                        const contributionText = channelContributions.join(' | ');
+                        elements.convOperation.textContent = `${contributionText} → Total = ${Math.round(totalSum * 100) / 100}`;
+                        await sleep(animationSpeed * 1.2);
+
+                        // Highlight output cell
+                        setExplanation(`Output[${out_ch + 1}][${out_r},${out_c}] = ${Math.round(totalSum * 100) / 100} (sum of all input channel contributions)`, "text-emerald-300");
+                        const outputCell = document.getElementById(`output-ch${out_ch}-${out_r}-${out_c}`);
+                        if (outputCell) {
+                            outputCell.textContent = Math.round(totalSum * 100) / 100;
+                            outputMatrix[out_ch][out_r][out_c] = totalSum;
+                            outputCell.classList.add('highlight-output');
+
+                            await sleep(animationSpeed * 0.8);
+
+                            // Clear highlights
+                            highlights.forEach(cell => cell && cell.classList.remove('highlight-input', 'highlight-kernel'));
+                            outputCell.classList.remove('highlight-output');
+                        }
+                    }
+                }
+            }
+            elements.convOperation.textContent = '';
+        }
+
+        async function animateDeconvolution() {
+            elements.convSection.style.opacity = '0.3';
+            elements.deconvSection.style.opacity = '1';
+            
+            // Update the deconv input grid with random values
+            createMultiChannelGrids(elements.deconvInputChannelsContainer, deconvInputMatrix, DECONV_INPUT_SIZE, 'deconv-input', false, 0, 'input');
+
+            // MULTI-CHANNEL DECONVOLUTION EXPLANATION:
+            // Transposed convolution works by:
+            // 1. For each input position, place the scaled kernel at the corresponding output positions
+            // 2. Each input value multiplies the entire kernel for that input-output channel pair
+            // 3. Sum all overlapping contributions in the output
+
+            // Initialize output to zeros
+            for (let out_ch = 0; out_ch < DECONV_OUTPUT_CHANNELS; out_ch++) {
+                for (let r = 0; r < DECONV_OUTPUT_SIZE; r++) {
+                    for (let c = 0; c < DECONV_OUTPUT_SIZE; c++) {
+                        reconstructedMatrix[out_ch][r][c] = 0;
+                    }
+                }
+            }
+
+            // For each input channel and input position
+            for (let in_ch = 0; in_ch < DECONV_INPUT_CHANNELS; in_ch++) {
+                for (let in_r = 0; in_r < DECONV_INPUT_SIZE; in_r++) {
+                    for (let in_c = 0; in_c < DECONV_INPUT_SIZE; in_c++) {
+                        if (!isAnimating) return;
+
+                        const inputValue = deconvInputMatrix[in_ch][in_r][in_c];
+                        if (inputValue === 0) continue; // Skip zero inputs for speed
+
+                        setExplanation(`Processing input[${in_ch + 1}][${in_r},${in_c}] = ${inputValue}: placing scaled kernels in output`, "text-blue-300");
+
+                        // Highlight the current input
+                        const inputCell = document.getElementById(`deconv-input-ch${in_ch}-${in_r}-${in_c}`);
+                        const inputHighlights = [inputCell];
+                        if (inputCell) {
+                            inputCell.classList.add('highlight-input');
+                        }
+
+                        // For each output channel
+                        for (let out_ch = 0; out_ch < DECONV_OUTPUT_CHANNELS; out_ch++) {
+                            if (!isAnimating) return;
+
+                            const highlights = [...inputHighlights];
+                            let operationString = `Input[${in_ch + 1}][${in_r},${in_c}] = ${inputValue} × Kernel[${out_ch + 1}][${in_ch + 1}]: `;
+
+                            // Calculate output position for this input position
+                            const out_r_start = in_r * DECONV_STRIDE - DECONV_PADDING;
+                            const out_c_start = in_c * DECONV_STRIDE - DECONV_PADDING;
+
+                            // Place the scaled kernel at output positions
+                            for (let k_r = 0; k_r < DECONV_KERNEL_SIZE; k_r++) {
+                                for (let k_c = 0; k_c < DECONV_KERNEL_SIZE; k_c++) {
+                                    const out_r = out_r_start + k_r;
+                                    const out_c = out_c_start + k_c;
+
+                                    // Check if output position is valid
+                                    if (out_r >= 0 && out_r < DECONV_OUTPUT_SIZE && 
+                                        out_c >= 0 && out_c < DECONV_OUTPUT_SIZE) {
+                                        
+                                        const kernelValue = deconvKernelMatrix[out_ch][in_ch][k_r][k_c];
+                                        const contribution = inputValue * kernelValue;
+
+                                        // Add contribution to output (accumulate overlapping values)
+                                        reconstructedMatrix[out_ch][out_r][out_c] += contribution;
+
+                                        // Highlight kernel and output cells
+                                        const kernelCell = document.getElementById(`deconv-kernel-out${out_ch}-in${in_ch}-${k_r}-${k_c}`);
+                                        const outputCell = document.getElementById(`reconstructed-ch${out_ch}-${out_r}-${out_c}`);
+
+                                        if (kernelCell && contribution !== 0) {
+                                            kernelCell.classList.add('highlight-kernel');
+                                            highlights.push(kernelCell);
+                                            operationString += `${kernelValue} `;
+                                        }
+
+                                        if (outputCell) {
+                                            outputCell.textContent = Math.round(reconstructedMatrix[out_ch][out_r][out_c] * 100) / 100;
+                                            outputCell.classList.add('highlight-output');
+                                            highlights.push(outputCell);
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Show the operation
+                            elements.deconvOperation.textContent = operationString + ` → contributions added to output[${out_ch + 1}]`;
+                            await sleep(deconvAnimationSpeed * 0.4);
+
+                            // Clear highlights for this output channel
+                            highlights.forEach(cell => cell && cell.classList.remove('highlight-kernel', 'highlight-output'));
+                        }
+
+                        // Clear input highlight
+                        if (inputCell) {
+                            inputCell.classList.remove('highlight-input');
+                        }
+
+                        await sleep(deconvAnimationSpeed * 0.2);
+                    }
+                }
+            }
+
+            setExplanation("Deconvolution complete! Each input value placed scaled kernels in the output.", "text-green-400");
+            elements.deconvOperation.textContent = '';
+        }
+
+        // --- EVENT HANDLERS ---
+        async function handleStartConvolution() {
+            if (isAnimating) return;
+            isAnimating = true;
+            elements.startConvBtn.disabled = true;
+            elements.startDeconvBtn.disabled = true;
+            reset();
+            await sleep(200);
+            isAnimating = true;
+            elements.convSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            await animateConvolution();
+            if (!isAnimating) { reset(); return; }
+            setExplanation("Convolution complete! You can now start deconvolution.", "text-blue-300");
+            convDone = true;
+            isAnimating = false;
+            elements.startDeconvBtn.disabled = false;
+        }
+
+        async function handleStartDeconvolution() {
+            if (isAnimating) return;
+            // If convolution hasn't been done, calculate outputMatrix directly (using multi-channel logic!)
+            if (!convDone) {
+                const paddedInputs = inputMatrix.map(channel => padMatrix(channel, PADDING));
+                const paddedSize = INPUT_SIZE + 2 * PADDING;
+                
+                for (let out_ch = 0; out_ch < OUTPUT_CHANNELS; out_ch++) {
+                    for (let out_r = 0; out_r < OUTPUT_SIZE; out_r++) {
+                        for (let out_c = 0; out_c < OUTPUT_SIZE; out_c++) {
+                            let sum = 0;
+                            const in_r_start = out_r * STRIDE;
+                            const in_c_start = out_c * STRIDE;
+                            
+                            // Sum across all input channels
+                            for (let in_ch = 0; in_ch < INPUT_CHANNELS; in_ch++) {
+                                for (let k_r = 0; k_r < KERNEL_SIZE; k_r++) {
+                                    for (let k_c = 0; k_c < KERNEL_SIZE; k_c++) {
+                                        const in_r = in_r_start + k_r;
+                                        const in_c = in_c_start + k_c;
+                                        const inputValue = (in_r >= 0 && in_r < paddedSize && in_c >= 0 && in_c < paddedSize) ? 
+                                            paddedInputs[in_ch][in_r][in_c] : 0;
+                                        const kernelValue = kernelMatrix[out_ch][in_ch][k_r][k_c];
+                                        sum += inputValue * kernelValue;
+                                    }
+                                }
+                            }
+                            outputMatrix[out_ch][out_r][out_c] = sum;
+                        }
+                    }
+                }
+                // Update the output grid
+                createMultiChannelGrids(elements.outputChannelsContainer, outputMatrix, OUTPUT_SIZE, 'output', false, 0, 'output');
+                convDone = true;
+            }
+            isAnimating = true;
+            elements.startDeconvBtn.disabled = true;
+            elements.convSection.style.opacity = '0.3';
+            elements.deconvSection.style.opacity = '1';
+            elements.deconvSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            await animateDeconvolution();
+            if (!isAnimating) { reset(); return; }
+            setExplanation("Deconvolution complete! Press 'Reset' to repeat.", "text-green-400");
+            isAnimating = false;
+        }
+
+        elements.startConvBtn.addEventListener('click', handleStartConvolution);
+        elements.startDeconvBtn.addEventListener('click', handleStartDeconvolution);
+        elements.resetBtn.addEventListener('click', reset);
+        elements.resetDeconvBtn.addEventListener('click', resetDeconvolution);
+        elements.speedRange.addEventListener('input', (e) => {
+            animationSpeed = 1050 - e.target.value;
+        });
+        elements.deconvSpeedRange.addEventListener('input', (e) => {
+            deconvAnimationSpeed = 1050 - e.target.value;
+        });
+
+        // --- DYNAMIC PARAMETERS ---
+        function setupParamInputs() {
+            const inputSizeInput = document.getElementById('inputSizeInput');
+            const kernelSizeInput = document.getElementById('kernelSizeInput');
+            const strideInput = document.getElementById('strideInput');
+            const paddingInput = document.getElementById('paddingInput');
+            const inputChannelsInput = document.getElementById('inputChannelsInput');
+            const outputChannelsInput = document.getElementById('outputChannelsInput');
+
+            const deconvInputSizeInput = document.getElementById('deconvInputSizeInput');
+            const deconvKernelSizeInput = document.getElementById('deconvKernelSizeInput');
+            const deconvStrideInput = document.getElementById('deconvStrideInput');
+            const deconvPaddingInput = document.getElementById('deconvPaddingInput');
+            const deconvInputChannelsInput = document.getElementById('deconvInputChannelsInput');
+            const deconvOutputChannelsInput = document.getElementById('deconvOutputChannelsInput');
+
+            function updateParams() {
+                let newInput = parseInt(inputSizeInput.value);
+                let newKernel = parseInt(kernelSizeInput.value);
+                let newStride = parseInt(strideInput.value);
+                let newPad = parseInt(paddingInput.value);
+                let newInputChannels = parseInt(inputChannelsInput.value);
+                let newOutputChannels = parseInt(outputChannelsInput.value);
+                
+                // minimum constraints
+                if (newKernel > newInput) newKernel = newInput;
+                if (newKernel < 2) newKernel = 2;
+                if (newInput < 3) newInput = 3;
+                if (newStride < 1) newStride = 1;
+                if (newPad < 0) newPad = 0;
+                if (newInputChannels < 1) newInputChannels = 1;
+                if (newInputChannels > 4) newInputChannels = 4;
+                if (newOutputChannels < 1) newOutputChannels = 1;
+                if (newOutputChannels > 4) newOutputChannels = 4;
+                
+                // update values
+                inputSizeInput.value = newInput;
+                kernelSizeInput.value = newKernel;
+                strideInput.value = newStride;
+                paddingInput.value = newPad;
+                inputChannelsInput.value = newInputChannels;
+                outputChannelsInput.value = newOutputChannels;
+                
+                INPUT_SIZE = newInput;
+                KERNEL_SIZE = newKernel;
+                STRIDE = newStride;
+                PADDING = newPad;
+                INPUT_CHANNELS = newInputChannels;
+                OUTPUT_CHANNELS = newOutputChannels;
+                initialize();
+            }
+
+            function updateDeconvParams() {
+                let newDeconvInput = parseInt(deconvInputSizeInput.value);
+                let newDeconvKernel = parseInt(deconvKernelSizeInput.value);
+                let newDeconvStride = parseInt(deconvStrideInput.value);
+                let newDeconvPad = parseInt(deconvPaddingInput.value);
+                let newDeconvInputChannels = parseInt(deconvInputChannelsInput.value);
+                let newDeconvOutputChannels = parseInt(deconvOutputChannelsInput.value);
+                
+                // Minimum and maximum constraints
+                if (newDeconvKernel < 2) newDeconvKernel = 2;
+                if (newDeconvInput < 2) newDeconvInput = 2;
+                if (newDeconvStride < 1) newDeconvStride = 1;
+                if (newDeconvPad < 0) newDeconvPad = 0;
+                if (newDeconvInputChannels < 1) newDeconvInputChannels = 1;
+                if (newDeconvInputChannels > 4) newDeconvInputChannels = 4;
+                if (newDeconvOutputChannels < 1) newDeconvOutputChannels = 1;
+                if (newDeconvOutputChannels > 4) newDeconvOutputChannels = 4;
+                
+                // Ensure output size is reasonable (not too large)
+                const tentativeOutput = (newDeconvInput - 1) * newDeconvStride + newDeconvKernel - 2 * newDeconvPad;
+                if (tentativeOutput > 20) {
+                    // Reduce input size or increase padding to keep output manageable
+                    if (newDeconvInput > 5) {
+                        newDeconvInput = Math.max(2, newDeconvInput - 1);
+                    } else if (newDeconvPad < 5) {
+                        newDeconvPad = Math.min(5, newDeconvPad + 1);
+                    }
+                }
+                
+                // update values
+                deconvInputSizeInput.value = newDeconvInput;
+                deconvKernelSizeInput.value = newDeconvKernel;
+                deconvStrideInput.value = newDeconvStride;
+                deconvPaddingInput.value = newDeconvPad;
+                deconvInputChannelsInput.value = newDeconvInputChannels;
+                deconvOutputChannelsInput.value = newDeconvOutputChannels;
+                
+                DECONV_INPUT_SIZE = newDeconvInput;
+                DECONV_KERNEL_SIZE = newDeconvKernel;
+                DECONV_STRIDE = newDeconvStride;
+                DECONV_PADDING = newDeconvPad;
+                DECONV_INPUT_CHANNELS = newDeconvInputChannels;
+                DECONV_OUTPUT_CHANNELS = newDeconvOutputChannels;
+                initialize();
+            }
+
+            inputSizeInput.addEventListener('change', updateParams);
+            kernelSizeInput.addEventListener('change', updateParams);
+            strideInput.addEventListener('change', updateParams);
+            paddingInput.addEventListener('change', updateParams);
+            inputChannelsInput.addEventListener('change', updateParams);
+            outputChannelsInput.addEventListener('change', updateParams);
+
+            deconvInputSizeInput.addEventListener('change', updateDeconvParams);
+            deconvKernelSizeInput.addEventListener('change', updateDeconvParams);
+            deconvStrideInput.addEventListener('change', updateDeconvParams);
+            deconvPaddingInput.addEventListener('change', updateDeconvParams);
+            deconvInputChannelsInput.addEventListener('change', updateDeconvParams);
+            deconvOutputChannelsInput.addEventListener('change', updateDeconvParams);
+        }
+
+        // --- INITIAL RENDER ---
+        window.onload = () => {
+            // Randomise ONLY at first load
+            inputMatrix = getDefaultMultiChannelInput(INPUT_CHANNELS, INPUT_SIZE);
+            kernelMatrix = getDefaultMultiChannelKernel(OUTPUT_CHANNELS, INPUT_CHANNELS, KERNEL_SIZE);
+            deconvInputMatrix = getDefaultMultiChannelInput(DECONV_INPUT_CHANNELS, DECONV_INPUT_SIZE);
+            deconvKernelMatrix = getDefaultMultiChannelKernel(DECONV_OUTPUT_CHANNELS, DECONV_INPUT_CHANNELS, DECONV_KERNEL_SIZE);
+            initialize();
+            setupParamInputs();
+            setupSectionHoverEffects();
+        };
+
+        // --- SECTION HOVER EFFECTS ---
+        function setupSectionHoverEffects() {
+            const convSection = elements.convSection;
+            const deconvSection = elements.deconvSection;
+
+            // Convolution section hover
+            convSection.addEventListener('mouseenter', () => {
+                if (!isAnimating) {
+                    convSection.style.opacity = '1';
+                    convSection.style.transform = 'scale(1.02)';
+                    deconvSection.classList.add('section-dimmed');
+                }
+            });
+
+            convSection.addEventListener('mouseleave', () => {
+                if (!isAnimating) {
+                    convSection.style.transform = 'scale(1)';
+                    deconvSection.classList.remove('section-dimmed');
+                }
+            });
+
+            // Deconvolution section hover
+            deconvSection.addEventListener('mouseenter', () => {
+                if (!isAnimating) {
+                    deconvSection.style.opacity = '1';
+                    deconvSection.style.transform = 'scale(1.02)';
+                    convSection.classList.add('section-dimmed');
+                }
+            });
+
+            deconvSection.addEventListener('mouseleave', () => {
+                if (!isAnimating) {
+                    deconvSection.style.transform = 'scale(1)';
+                    convSection.classList.remove('section-dimmed');
+                    // Restore default opacity state
+                    if (!convDone) {
+                        deconvSection.style.opacity = '0.3';
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

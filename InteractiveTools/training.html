@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear Classifier Training Visualisation</title>
+    <meta name="description" content="An interactive educational tool demonstrating how linear classifiers learn to separate data through gradient descent - a simplified representation of machine learning concepts">
+    <meta name="keywords" content="linear classifier, machine learning, gradient descent, visualisation, educational tool, simplified deep learning">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --secondary-color: #f97316;
+            --accent-color: #ef4444;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .glass-morphism {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .dark .glass-morphism {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .info-card {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+        }
+        
+        .info-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .control-panel-bg {
+            background: linear-gradient(135deg, rgba(249, 250, 251, 0.95), rgba(243, 244, 246, 0.9));
+            border: 1px solid rgba(229, 231, 235, 0.8);
+        }
+        
+        .dark .control-panel-bg {
+            background: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(31, 41, 55, 0.9));
+            border: 1px solid rgba(75, 85, 99, 0.8);
+        }
+        
+        canvas {
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), #2563eb);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--accent-color), #dc2626);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.4);
+        }
+        
+        .floating-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(229, 231, 235, 0.8);
+        }
+        
+        .dark .floating-header {
+            background: rgba(17, 24, 39, 0.95);
+            border-bottom: 1px solid rgba(75, 85, 99, 0.8);
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8rem;
+        }
+        
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300">
+    <!-- Floating Header -->
+    <header class="floating-header top-0 z-50 mb-8">
+        <div class="container mx-auto px-4 py-6">
+            <div class="text-center">
+                <h1 class="text-4xl md:text-5xl font-bold gradient-text mb-2">
+                    <i class="fas fa-brain mr-3"></i>Linear Classifier Training
+                </h1>
+                <p class="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+                    A simplified educational visualisation demonstrating how machine learning classifiers learn through gradient descent optimisation
+                </p>
+                <p class="text-sm text-gray-500 dark:text-gray-500 mt-2 italic">
+                    <i class="fas fa-info-circle mr-1"></i>Note: This uses a linear classifier for simplicity. Real deep learning networks use non-linear layers.
+                </p>
+                
+                <!-- Author Information -->
+            <div class="mt-6 inline-block bg-white rounded-lg shadow-md px-6 py-4 border border-gray-200">
+                <div class="flex items-center justify-center space-x-3">
+                    <svg class="w-5 h-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="text-sm">
+                        <span class="text-gray-500 font-medium">Created by:</span>
+                        <span class="text-gray-800 font-semibold ml-1"><a href="https://www.soumick.com">Soumick Chatterjee, PhD</a></span>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    🎓 Teaching Tool for an Introduction to Machine Learning Course
+                </div>
+            </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 pb-8 max-w-7xl">
+        <!-- Educational Overview -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 mb-8 glass-morphism">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-chart-line text-blue-600 dark:text-blue-400 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Gradient Descent</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Watch how the algorithm iteratively adjusts the linear decision boundary to minimise classification errors
+                    </p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-bullseye text-orange-600 dark:text-orange-400 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Linear Classification</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Observe how the linear model learns to distinguish between two classes using a straight line boundary
+                    </p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-cog text-red-600 dark:text-red-400 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Hyperparameters</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Experiment with different learning rates to understand their impact on linear model training dynamics
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            
+            <!-- Left Column: Visualisation & Controls -->
+            <div class="xl:col-span-2">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+                                <i class="fas fa-eye mr-2"></i>Training Visualisation
+                            </h2>
+                            <div class="flex items-center space-x-4">
+                                <div class="tooltip">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-4 h-4 bg-blue-500 rounded-full"></div>
+                                        <span class="text-sm font-medium">Class 1</span>
+                                    </div>
+                                    <span class="tooltiptext">Positive class data points</span>
+                                </div>
+                                <div class="tooltip">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-4 h-4 bg-orange-500 rounded-full"></div>
+                                        <span class="text-sm font-medium">Class 0</span>
+                                    </div>
+                                    <span class="tooltiptext">Negative class data points</span>
+                                </div>
+                                <div class="tooltip">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-4 h-1 bg-red-500 rounded"></div>
+                                        <span class="text-sm font-medium">Decision Boundary</span>
+                                    </div>
+                                    <span class="tooltiptext">The line that separates the two classes</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="relative aspect-square">
+                            <canvas id="mainCanvas" class="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl"></canvas>
+                            <div id="infoOverlay" class="absolute top-4 left-4 glass-morphism info-card px-4 py-3 rounded-xl text-sm text-gray-900 dark:text-gray-100 shadow-lg">
+                                <div class="flex items-center space-x-4">
+                                    <div class="flex items-center space-x-2">
+                                        <i class="fas fa-step-forward text-blue-500"></i>
+                                        <span class="font-semibold text-indigo-500">Epoch:</span>
+                                        <span id="epochDisplay" class="font-mono text-blue-600 dark:text-blue-400">0</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <i class="fas fa-chart-area text-red-500"></i>
+                                        <span class="font-semibold text-red-500">Loss:</span>
+                                        <span id="lossDisplay" class="font-mono text-red-600 dark:text-red-400">N/A</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="statusIndicator" class="absolute top-4 right-4 glass-morphism px-3 py-2 rounded-full text-sm font-medium">
+                                <span id="statusText">Ready</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Enhanced Controls -->
+                    <div class="p-6 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="space-y-4">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                    <i class="fas fa-play-circle mr-2"></i>Training Controls
+                                </h3>
+                                <div class="flex space-x-3">
+                                    <button id="startBtn" class="flex-1 btn-primary text-white font-semibold py-3 px-6 rounded-xl shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300">
+                                        <i class="fas fa-play mr-2"></i>Start Training
+                                    </button>
+                                    <button id="resetBtn" class="flex-1 btn-secondary text-white font-semibold py-3 px-6 rounded-xl shadow-lg focus:outline-none focus:ring-4 focus:ring-red-300 transition-all duration-300">
+                                        <i class="fas fa-refresh mr-2"></i>Reset
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                    <i class="fas fa-sliders-h mr-2"></i>Hyperparameters
+                                </h3>
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <label for="lrSlider" class="text-sm font-medium text-gray-700 dark:text-gray-300">Learning Rate</label>
+                                        <span id="lrDisplay" class="text-sm font-mono bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded">0.100</span>
+                                    </div>
+                                    <input id="lrSlider" type="range" min="0.001" max="1.0" step="0.001" value="0.1" 
+                                           class="w-full h-3 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer slider">
+                                    <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                                        <span>0.001</span>
+                                        <span>Slow ← → Fast</span>
+                                        <span>1.0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Training Loss Analysis & Performance Metrics -->
+            <div class="space-y-6">
+                <!-- Training Loss Chart -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 glass-morphism">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+                        <i class="fas fa-chart-line mr-2 text-red-500"></i>Training Loss Analysis
+                    </h2>
+                    <div class="relative h-80">
+                        <canvas id="lossChartCanvas"></canvas>
+                    </div>
+                    <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
+                        <div class="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-arrow-down text-red-500"></i>
+                                <span class="font-semibold text-red-800 dark:text-red-300">Decreasing Loss</span>
+                            </div>
+                            <p class="text-red-600 dark:text-red-400 mt-1">Model is learning and improving</p>
+                        </div>
+                        <div class="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-minus text-yellow-500"></i>
+                                <span class="font-semibold text-yellow-800 dark:text-yellow-300">Plateau</span>
+                            </div>
+                            <p class="text-yellow-600 dark:text-yellow-400 mt-1">Model has converged</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Metrics -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 glass-morphism">
+                    <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+                        <i class="fas fa-analytics mr-2 text-green-500"></i>Performance Metrics
+                    </h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl">
+                            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400" id="accuracyDisplay">0%</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Accuracy</div>
+                        </div>
+                        <div class="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl">
+                            <div class="text-2xl font-bold text-green-600 dark:text-green-400" id="convergenceDisplay">No</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Converged</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Educational Tips -->
+                <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-xl p-6 text-white">
+                    <h2 class="text-2xl font-bold mb-4">
+                        <i class="fas fa-graduation-cap mr-2"></i>Learning Tips
+                    </h2>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-lightbulb text-yellow-300 mt-1"></i>
+                            <p>Try different learning rates to observe how they affect linear model training speed and stability.</p>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-eye text-blue-300 mt-1"></i>
+                            <p>Watch how the straight-line boundary moves as the linear model learns from the data.</p>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-chart-line text-green-300 mt-1"></i>
+                            <p>Observe the relationship between loss reduction and linear classification improvement.</p>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-brain text-purple-300 mt-1"></i>
+                            <p><strong>Remember:</strong> Real deep learning uses multiple non-linear layers to create complex decision boundaries!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- How It Works Section - Moved Below -->
+        <div class="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 glass-morphism">
+            <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+                <i class="fas fa-lightbulb mr-2 text-yellow-500"></i>How It Works
+            </h2>
+            <div class="space-y-4 text-sm text-gray-600 dark:text-gray-400">
+                <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border-l-4 border-blue-500">
+                    <h4 class="font-semibold text-blue-800 dark:text-blue-300 mb-2">
+                        <i class="fas fa-info-circle mr-2"></i>Simplified Linear Model
+                    </h4>
+                    <p>This visualisation demonstrates a <strong>linear classifier</strong> using gradient descent to learn a straight-line decision boundary. <strong>Real deep learning networks</strong> use multiple non-linear layers with activation functions to create complex, curved decision boundaries that can solve much more sophisticated problems.</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-800 dark:text-gray-300 mb-2">
+                            <i class="fas fa-step-forward mr-2 text-blue-500"></i>Epoch
+                        </h4>
+                        <p>One complete pass through the entire dataset. The model updates its parameters after processing all data points.</p>
+                    </div>
+                    
+                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-800 dark:text-gray-300 mb-2">
+                            <i class="fas fa-tachometer-alt mr-2 text-green-500"></i>Learning Rate
+                        </h4>
+                        <p>Controls the step size of parameter updates. Higher values train faster but may overshoot the optimum; lower values are more stable but slower.</p>
+                    </div>
+                    
+                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-800 dark:text-gray-300 mb-2">
+                            <i class="fas fa-chart-area mr-2 text-red-500"></i>Loss Function
+                        </h4>
+                        <p>Mean Squared Error (MSE) measures prediction accuracy. Training aims to minimise this value through iterative parameter adjustments.</p>
+                    </div>
+                    
+                    <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-800 dark:text-gray-300 mb-2">
+                            <i class="fas fa-divide mr-2 text-purple-500"></i>Linear Decision Boundary
+                        </h4>
+                        <p>The red line represents the model's classification boundary. Unlike deep neural networks that can learn complex curved boundaries, this linear model can only create straight lines to separate classes.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Important Clarification Section -->
+        <div class="mt-8 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-l-4 border-amber-500 rounded-2xl p-6">
+            <div class="flex items-start space-x-4">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle text-amber-500 text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-amber-800 dark:text-amber-300 mb-3">
+                        Important: This is a Simplified Representation
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+                            <h4 class="font-semibold text-gray-800 dark:text-gray-300 mb-2">
+                                <i class="fas fa-minus-circle text-red-500 mr-2"></i>This Linear Model
+                            </h4>
+                            <ul class="space-y-1 text-gray-600 dark:text-gray-400">
+                                <li>• Uses a single linear equation (y = mx + b)</li>
+                                <li>• Creates only straight-line decision boundaries</li>
+                                <li>• Limited to linearly separable problems</li>
+                                <li>• Simple gradient descent on 3 parameters</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+                            <h4 class="font-semibold text-gray-800 dark:text-gray-300 mb-2">
+                                <i class="fas fa-brain text-blue-500 mr-2"></i>Real Deep Learning
+                            </h4>
+                            <ul class="space-y-1 text-gray-600 dark:text-gray-400">
+                                <li>• Uses multiple layers with non-linear activations</li>
+                                <li>• Creates complex, curved decision boundaries</li>
+                                <li>• Solves highly non-linear problems</li>
+                                <li>• Optimises millions/billions of parameters</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <p class="mt-4 text-amber-700 dark:text-amber-300">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <strong>This visualisation is designed for educational purposes</strong> to help understand the fundamental concepts of gradient descent and classification. Real deep learning networks are far more complex and powerful!
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+
+        <!-- Footer -->
+        <footer class="mt-16 text-center text-white-500 text-sm">
+            <p>© 2025 Soumick Chatterjee • Created for Educational Purposes</p>
+            <p class="mt-2">This guide is part of his Introduction to Machine Learning course</p>
+        </footer>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Element References ---
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+            const startBtn = document.getElementById('startBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const lrSlider = document.getElementById('lrSlider');
+            const epochDisplay = document.getElementById('epochDisplay');
+            const lossDisplay = document.getElementById('lossDisplay');
+            const lrDisplay = document.getElementById('lrDisplay');
+            const lossChartCanvas = document.getElementById('lossChartCanvas');
+            const accuracyDisplay = document.getElementById('accuracyDisplay');
+            const convergenceDisplay = document.getElementById('convergenceDisplay');
+            const statusText = document.getElementById('statusText');
+            const statusIndicator = document.getElementById('statusIndicator');
+
+            // --- State Variables ---
+            let data = [];
+            let weights = { w1: 0, w2: 0, b: 0 };
+            let learningRate = 0.1;
+            let epoch = 0;
+            let isTraining = false;
+            let animationFrameId;
+            let lossHistory = [];
+            let lossChart;
+            let lastLoss = Infinity;
+            let convergenceThreshold = 1e-6;
+            let convergenceCounter = 0;
+            let hasConverged = false;
+
+            // --- Constants ---
+            const NUM_POINTS = 200;
+            const POINT_RADIUS = 6;
+            const CONVERGENCE_PATIENCE = 10;
+
+            // --- Utility Functions ---
+
+            /**
+             * Updates the status indicator with current training state
+             */
+            function updateStatus(status, color = 'bg-gray-500') {
+                statusText.textContent = status;
+                statusIndicator.className = `absolute top-4 right-4 glass-morphism px-3 py-2 rounded-full text-sm font-medium ${color} text-white`;
+            }
+
+            /**
+             * Calculates the current accuracy of the model
+             */
+            function calculateAccuracy() {
+                let correct = 0;
+                data.forEach(point => {
+                    const z = weights.w1 * point.x + weights.w2 * point.y + weights.b;
+                    const prediction = sigmoid(z) > 0.5 ? 1 : 0;
+                    if (prediction === point.label) correct++;
+                });
+                return (correct / data.length) * 100;
+            }
+
+            /**
+             * Resizes the canvas to fit its container, maintaining a 1:1 aspect ratio
+             */
+            function resizeCanvas() {
+                const container = canvas.parentElement;
+                const size = Math.min(container.clientWidth, container.clientHeight);
+                canvas.width = size;
+                canvas.height = size;
+                draw();
+            }
+            
+            /**
+             * Generates a more realistic dataset with two clusters
+             */
+            function generateData() {
+                data = [];
+                
+                // Generate two clusters with some overlap
+                for (let i = 0; i < NUM_POINTS; i++) {
+                    let x, y, label;
+                    
+                    if (Math.random() < 0.5) {
+                        // Class 0: bottom-left cluster
+                        x = Math.random() * 0.6 + 0.1;
+                        y = Math.random() * 0.6 + 0.1;
+                        label = 0;
+                    } else {
+                        // Class 1: top-right cluster
+                        x = Math.random() * 0.6 + 0.3;
+                        y = Math.random() * 0.6 + 0.3;
+                        label = 1;
+                    }
+                    
+                    // Add some noise to make it more realistic
+                    x += (Math.random() - 0.5) * 0.2;
+                    y += (Math.random() - 0.5) * 0.2;
+                    
+                    // Clamp to [0, 1] bounds
+                    x = Math.max(0, Math.min(1, x));
+                    y = Math.max(0, Math.min(1, y));
+                    
+                    data.push({ x, y, label });
+                }
+            }
+
+            /**
+             * Initialises or resets the entire simulation to its starting state
+             */
+            function reset() {
+                isTraining = false;
+                hasConverged = false;
+                convergenceCounter = 0;
+                
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                }
+                
+                // Reset button states
+                startBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Start Training';
+                startBtn.className = 'flex-1 btn-primary text-white font-semibold py-3 px-6 rounded-xl shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300';
+
+                epoch = 0;
+                lastLoss = Infinity;
+                
+                // Initialise weights randomly
+                weights = {
+                    w1: (Math.random() - 0.5) * 2,
+                    w2: (Math.random() - 0.5) * 2,
+                    b: (Math.random() - 0.5) * 2
+                };
+                
+                lossHistory = [];
+                generateData();
+                updateDisplays();
+                updateStatus('Ready', 'bg-green-500');
+                initLossChart();
+                draw();
+            }
+
+            /**
+             * Enhanced drawing function with improved visuals
+             */
+            function draw() {
+                if (!ctx) return;
+                
+                // Clear canvas with gradient background
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                gradient.addColorStop(0, 'rgba(243, 244, 246, 0.8)');
+                gradient.addColorStop(1, 'rgba(249, 250, 251, 0.8)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw data points with enhanced styling
+                data.forEach(point => {
+                    const x = point.x * canvas.width;
+                    const y = point.y * canvas.height;
+                    
+                    // Draw shadow
+                    ctx.beginPath();
+                    ctx.arc(x + 2, y + 2, POINT_RADIUS, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                    ctx.fill();
+                    
+                    // Draw main point
+                    ctx.beginPath();
+                    ctx.arc(x, y, POINT_RADIUS, 0, Math.PI * 2);
+                    ctx.fillStyle = point.label === 1 ? 
+                        'rgba(59, 130, 246, 0.9)' : 'rgba(249, 115, 22, 0.9)';
+                    ctx.fill();
+                    
+                    // Draw border
+                    ctx.beginPath();
+                    ctx.arc(x, y, POINT_RADIUS, 0, Math.PI * 2);
+                    ctx.strokeStyle = point.label === 1 ? 
+                        'rgba(37, 99, 235, 1)' : 'rgba(234, 88, 12, 1)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                });
+
+                // Draw decision boundary with enhanced styling
+                if (weights.w2 !== 0) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.9)';
+                    ctx.lineWidth = 4;
+                    ctx.lineCap = 'round';
+                    
+                    // Draw shadow for the line
+                    ctx.beginPath();
+                    const x1 = 0;
+                    const y1 = (-weights.w1 * x1 - weights.b) / weights.w2;
+                    const x2 = 1;
+                    const y2 = (-weights.w1 * x2 - weights.b) / weights.w2;
+                    
+                    ctx.moveTo(x1 * canvas.width + 2, y1 * canvas.height + 2);
+                    ctx.lineTo(x2 * canvas.width + 2, y2 * canvas.height + 2);
+                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+                    ctx.lineWidth = 6;
+                    ctx.stroke();
+                    
+                    // Draw main line
+                    ctx.beginPath();
+                    ctx.moveTo(x1 * canvas.width, y1 * canvas.height);
+                    ctx.lineTo(x2 * canvas.width, y2 * canvas.height);
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.9)';
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+                }
+            }
+
+            /**
+             * Sigmoid activation function
+             */
+            function sigmoid(z) {
+                return 1 / (1 + Math.exp(-Math.max(-500, Math.min(500, z))));
+            }
+
+            /**
+             * Enhanced training loop with convergence detection
+             */
+            function train() {
+                if (!isTraining) return;
+
+                // Check for convergence
+                if (hasConverged) {
+                    isTraining = false;
+                    startBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Converged';
+                    startBtn.className = 'flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg focus:outline-none focus:ring-4 focus:ring-green-300 transition-all duration-300';
+                    updateStatus('Converged', 'bg-green-500');
+                    return;
+                }
+
+                // Gradient descent step
+                let totalLoss = 0;
+                let gradients = { dw1: 0, dw2: 0, db: 0 };
+
+                data.forEach(point => {
+                    const z = weights.w1 * point.x + weights.w2 * point.y + weights.b;
+                    const prediction = sigmoid(z);
+                    const error = prediction - point.label;
+                    
+                    gradients.dw1 += error * point.x;
+                    gradients.dw2 += error * point.y;
+                    gradients.db += error;
+                    
+                    totalLoss += Math.pow(error, 2);
+                });
+
+                // Average gradients and loss
+                const N = data.length;
+                gradients.dw1 /= N;
+                gradients.dw2 /= N;
+                gradients.db /= N;
+                const currentLoss = totalLoss / N;
+
+                // Update weights
+                weights.w1 -= learningRate * gradients.dw1;
+                weights.w2 -= learningRate * gradients.dw2;
+                weights.b -= learningRate * gradients.db;
+
+                // Check for convergence
+                if (Math.abs(lastLoss - currentLoss) < convergenceThreshold) {
+                    convergenceCounter++;
+                    if (convergenceCounter >= CONVERGENCE_PATIENCE) {
+                        hasConverged = true;
+                    }
+                } else {
+                    convergenceCounter = 0;
+                }
+
+                lastLoss = currentLoss;
+                epoch++;
+                lossHistory.push(currentLoss);
+
+                updateDisplays(currentLoss);
+                updateLossChart();
+                updateStatus('Training...', 'bg-blue-500 pulse-animation');
+                draw();
+                
+                animationFrameId = requestAnimationFrame(train);
+            }
+            
+            /**
+             * Initialises the enhanced Chart.js graph
+             */
+            function initLossChart() {
+                if (lossChart) {
+                    lossChart.destroy();
+                }
+                
+                const chartCtx = lossChartCanvas.getContext('2d');
+                lossChart = new Chart(chartCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Training Loss',
+                            data: [],
+                            borderColor: 'rgb(239, 68, 68)',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderWidth: 3,
+                            pointRadius: 0,
+                            pointHoverRadius: 6,
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        },
+                        scales: {
+                            x: {
+                                title: { 
+                                    display: true, 
+                                    text: 'Epoch',
+                                    font: { weight: 'bold' }
+                                },
+                                ticks: { maxTicksLimit: 10 },
+                                grid: { color: 'rgba(0, 0, 0, 0.1)' }
+                            },
+                            y: {
+                                title: { 
+                                    display: true, 
+                                    text: 'Mean Squared Error',
+                                    font: { weight: 'bold' }
+                                },
+                                beginAtZero: true,
+                                grid: { color: 'rgba(0, 0, 0, 0.1)' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleFont: { weight: 'bold' },
+                                bodyFont: { weight: 'normal' },
+                                cornerRadius: 8
+                            }
+                        }
+                    }
+                });
+            }
+
+            /**
+             * Updates the loss chart with the latest data
+             */
+            function updateLossChart() {
+                if (!lossChart) return;
+                
+                lossChart.data.labels.push(epoch);
+                lossChart.data.datasets[0].data.push(lossHistory[lossHistory.length - 1]);
+                
+                // Keep only last 100 points for performance
+                if (lossChart.data.labels.length > 100) {
+                    lossChart.data.labels.shift();
+                    lossChart.data.datasets[0].data.shift();
+                }
+                
+                lossChart.update('none');
+            }
+
+            /**
+             * Updates all display elements with current values
+             */
+            function updateDisplays(loss) {
+                epochDisplay.textContent = epoch;
+                lossDisplay.textContent = loss ? loss.toFixed(6) : 'N/A';
+                lrDisplay.textContent = learningRate.toFixed(3);
+                
+                // Update accuracy
+                const accuracy = calculateAccuracy();
+                accuracyDisplay.textContent = accuracy.toFixed(1) + '%';
+                
+                // Update convergence status
+                convergenceDisplay.textContent = hasConverged ? 'Yes' : 'No';
+                convergenceDisplay.className = hasConverged ? 
+                    'text-2xl font-bold text-green-600 dark:text-green-400' : 
+                    'text-2xl font-bold text-red-600 dark:text-red-400';
+            }
+
+            // --- Event Listeners ---
+            startBtn.addEventListener('click', () => {
+                if (hasConverged) {
+                    reset();
+                    return;
+                }
+                
+                if (isTraining) {
+                    isTraining = false;
+                    startBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Resume';
+                    startBtn.className = 'flex-1 btn-primary text-white font-semibold py-3 px-6 rounded-xl shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300';
+                    updateStatus('Paused', 'bg-yellow-500');
+                    cancelAnimationFrame(animationFrameId);
+                } else {
+                    isTraining = true;
+                    startBtn.innerHTML = '<i class="fas fa-pause mr-2"></i>Pause';
+                    startBtn.className = 'flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg focus:outline-none focus:ring-4 focus:ring-yellow-300 transition-all duration-300';
+                    updateStatus('Training...', 'bg-blue-500 pulse-animation');
+                    train();
+                }
+            });
+
+            resetBtn.addEventListener('click', reset);
+
+            lrSlider.addEventListener('input', (e) => {
+                learningRate = parseFloat(e.target.value);
+                updateDisplays();
+            });
+
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    startBtn.click();
+                } else if (e.code === 'KeyR') {
+                    e.preventDefault();
+                    resetBtn.click();
+                }
+            });
+
+            window.addEventListener('resize', resizeCanvas);
+
+            // --- Initialisation ---
+            reset();
+            resizeCanvas();
+        });
+    </script>
+</body>
+</html>
