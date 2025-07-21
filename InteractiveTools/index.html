@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,scale=1.0">
+    <title>TenForwardAI: Interactive Tools</title>
+    <meta name="description" content="Interactive educational tools for understanding deep learning and machine learning concepts through visualisation">
+    <meta name="keywords" content="deep learning, machine learning, neural networks, education, interactive tools, visualisation">
+    <meta name="author" content="Soumick Chatterjee">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+        }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background-size: 200% 200%;
+            animation: gradient 8s ease infinite;
+        }
+        
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .tool-icon {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 1rem;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            color: white;
+        }
+        
+        .tool-icon-1 { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .tool-icon-2 { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .tool-icon-3 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <div class="hero-gradient">
+        <div class="container mx-auto px-6 py-20">
+            <div class="text-center text-white">
+                <h1 class="text-5xl md:text-7xl font-bold mb-6">
+                    TenForwardAI
+                    <span class="block text-3xl md:text-4xl font-medium mt-4 opacity-90">Interactive Tools</span>
+                </h1>
+                <p class="text-xl md:text-2xl mb-6 max-w-3xl mx-auto opacity-90">
+                    Explore and understand deep learning concepts through interactive visualisations
+                </p>
+                <div class="pulse-animation">
+                    <i class="fas fa-brain text-6xl mb-4"></i>
+                </div>
+                <div class="mb-8 opacity-80">
+                    <p class="text-lg mb-2">Created by</p>
+                    <p class="text-xl font-semibold"><a href="https://www.soumick.com">Soumick Chatterjee, PhD</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tools Section -->
+    <div class="container mx-auto px-6 py-16">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl font-bold text-white mb-4">Interactive Learning Tools</h2>
+            <p class="text-xl text-gray-200 max-w-2xl mx-auto">
+                Choose from our collection of interactive tools designed to make machine learning concepts accessible and engaging
+            </p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8">
+            <!-- Deep Learning Classifier Lifecycle -->
+            <div class="card p-8 text-center">
+                <div class="tool-icon tool-icon-1 mx-auto">
+                    <i class="fas fa-sitemap"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-4">Classifier Lifecycle</h3>
+                <p class="text-gray-600 mb-6 leading-relaxed">
+                    Step-by-step visualisation of the deep learning classifier training process, from dataset preparation to model deployment. Perfect for understanding the complete ML pipeline.
+                </p>
+                <div class="flex flex-wrap gap-2 mb-6 justify-center">
+                    <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">Deep Learning</span>
+                    <span class="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">Training Process</span>
+                    <span class="px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full">Classification</span>
+                </div>
+                <a href="classifier_lifecycle.html" 
+                   class="inline-block bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105">
+                    Explore Tool
+                    <i class="fas fa-arrow-right ml-2"></i>
+                </a>
+            </div>
+
+            <!-- Convolution and Deconvolution -->
+            <div class="card p-8 text-center">
+                <div class="tool-icon tool-icon-2 mx-auto">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-4">Conv & Deconv</h3>
+                <p class="text-gray-600 mb-6 leading-relaxed">
+                    Interactive visualisation of convolution and deconvolution operations. See how neural networks process images through convolutional layers in real-time.
+                </p>
+                <div class="flex flex-wrap gap-2 mb-6 justify-center">
+                    <span class="px-3 py-1 bg-pink-100 text-pink-800 text-sm rounded-full">CNNs</span>
+                    <span class="px-3 py-1 bg-red-100 text-red-800 text-sm rounded-full">Convolution</span>
+                    <span class="px-3 py-1 bg-orange-100 text-orange-800 text-sm rounded-full">Image Processing</span>
+                </div>
+                <a href="conv_deconv.html" 
+                   class="inline-block bg-gradient-to-r from-pink-500 to-red-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105">
+                    Explore Tool
+                    <i class="fas fa-arrow-right ml-2"></i>
+                </a>
+            </div>
+
+            <!-- Linear Classifier Training -->
+            <div class="card p-8 text-center">
+                <div class="tool-icon tool-icon-3 mx-auto">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-4">Linear Training</h3>
+                <p class="text-gray-600 mb-6 leading-relaxed">
+                    Watch linear classifiers learn to separate data through gradient descent. A simplified but powerful demonstration of how machine learning algorithms improve over time.
+                </p>
+                <div class="flex flex-wrap gap-2 mb-6 justify-center">
+                    <span class="px-3 py-1 bg-cyan-100 text-cyan-800 text-sm rounded-full">Linear Models</span>
+                    <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">Gradient Descent</span>
+                    <span class="px-3 py-1 bg-teal-100 text-teal-800 text-sm rounded-full">Visualisation</span>
+                </div>
+                <a href="training.html" 
+                   class="inline-block bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-700 transition-all duration-300 transform hover:scale-105">
+                    Explore Tool
+                    <i class="fas fa-arrow-right ml-2"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="container mx-auto px-6 text-center">
+            <p>© 2025 Soumick Chatterjee • Created for Educational Purposes</p>
+        </div>
+    </footer>
+
+    <script>
+        // Add smooth scrolling for better UX
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Add entrance animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Apply animations to cards
+        document.querySelectorAll('.card').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(card);
+        });
+    </script>
+</body>
+</html>
